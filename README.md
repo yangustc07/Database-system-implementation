@@ -1,8 +1,7 @@
-dbi
-===
+COP6726 Project
+===============
+*Database System Implementation*
 
-COP6726 Database System Implementation Project
 
-Yang Chen, Xi Tao
-
+**Yang Chen, Xi Tao**   
 {yang,xtao}@cise.ufl.edu
