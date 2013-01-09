@@ -4,7 +4,7 @@
 
 // make sure that the file path/dir information below is correct
 char *dbfile_dir = ""; // dir where binary heap files should be stored
-char *tpch_dir ="/cise/tmp/dbi_sp11/DATA/10M/"; // dir where dbgen tpch files (extension *.tbl) can be found
+char *tpch_dir ="../data/10M/"; // dir where dbgen tpch files (extension *.tbl) can be found
 char *catalog_path = "catalog"; // full path of the catalog file
 
 using namespace std;
