@@ -1,7 +1,13 @@
 
 #include <iostream>
+#include <cassert>
 #include "Record.h"
 #include <stdlib.h>
+
+#define assertMsg(cond,msg) {  \
+    if(!(cond)) {std::cerr<<(msg)<<std::endl;}  \
+    assert(cond); }
+
 using namespace std;
 
 extern "C" {
@@ -31,7 +37,8 @@ int main () {
 	myComparison.Print ();
 
 	// now open up the text file and start procesing it
-        FILE *tableFile = fopen ("../data/10M/lineitem.tbl", "r");
+        FILE *tableFile = fopen ("../data/11M/lineitem.tbl", "r");
+        assertMsg(tableFile != NULL, "Data file missing; download from /cise/tmp/dbi_sp11/DATA or run on department machines.");
 
         Record temp;
         Schema mySchema ("catalog", "lineitem");
