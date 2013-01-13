@@ -1,4 +1,5 @@
 CXXFLAGS := -O2 -Wno-deprecated -g
+LDLIBS := -lfl
 
 tag = -i
 
@@ -6,11 +7,7 @@ ifdef linux
 tag = -n
 endif
 
-all: main
-
-#test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o y.tab.o lex.yy.o test.o
-#	$(LINK.o) -o $@ $^ -lfl
-
+test: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o y.tab.o lex.yy.o
 main: Record.o Comparison.o ComparisonEngine.o Schema.o File.o y.tab.o lex.yy.o
 
 y.tab.o: Parser.y

@@ -37,7 +37,7 @@ int main () {
 	myComparison.Print ();
 
 	// now open up the text file and start procesing it
-        FILE *tableFile = fopen ("../data/11M/lineitem.tbl", "r");
+        FILE *tableFile = fopen ("../data/10M/lineitem.tbl", "r");
         assertMsg(tableFile != NULL, "Data file missing; download from /cise/tmp/dbi_sp11/DATA or run on department machines.");
 
         Record temp;
