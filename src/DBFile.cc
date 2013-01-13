@@ -40,18 +40,18 @@ int DBFile::Close () {
 }
 
 void DBFile::Add (Record &rec) {
-  Page lastPage;
-  theFile.GetPage(&lastPage, theFile.GetLength()-1);
-  if(!lastPage.Append(&rec)) { // need to create a new page
-    Page newPage;
-    newPage.Append(&rec); // Q: what if rec is more than one page??
-    theFile.AddPage(&newPage, theFile.GetLength());
+  if(theFile.GetLength()==0) return theFile.addRecordToNewPage(&rec);
+  else {
+    Page lastPage;
+    theFile.GetPage(&lastPage, theFile.GetLength()-2); // first page contains no data
+    if(!lastPage.Append(&rec)) // need to create a new page
+      theFile.addRecordToNewPage(&rec);
   }
 }
 
 int DBFile::GetNext (Record &fetchme) {
   while (curPage.GetFirst(&fetchme)==0) {
-    if(++curPageIdx >= theFile.GetLength()) return 0;  // no more records
+    if(++curPageIdx >= theFile.GetLength()-1) return 0;  // no more records
     theFile.GetPage(&curPage, curPageIdx);
   }
   return 1;
