@@ -1,3 +1,5 @@
+#include <iostream>  // only for debugging
+
 #include "TwoWayList.h"
 #include "Record.h"
 #include "Schema.h"
@@ -11,28 +13,27 @@
 DBFile::DBFile(): curPageIdx(0) {}
 
 int DBFile::Create (char *fpath, fType ftype, void *startup) {
-  theFile.Open(0, fpath);
-  return 1;  // TODO: check: always succeed?
+  theFile.Open(0, fpath);   // TODO
+  return 1;
 }
 
-void DBFile::Load (Schema &myschema, char *loadpath) {
+void DBFile::Load (Schema &myschema, char *loadpath) {  // start writing
   FILE* ifp = fopen(loadpath, "r");
   FATALIF(ifp==NULL, loadpath);
 
   Record next;
-  while (next.SuckNextRecord(&myschema, ifp)) {
-    Add(next);
-  }
+  curPage.EmptyItOut();  // creates the first page
+  while (next.SuckNextRecord(&myschema, ifp)) Add(next);
+  theFile.addPage(&curPage);  // writes the last page
 }
 
 int DBFile::Open (char *fpath) {
-  theFile.Open(1, fpath);
-  return 1;  // TODO: check: always succeed?
+  theFile.Open(1, fpath);   // TODO
+  return 1;
 }
 
-void DBFile::MoveFirst () {
-  curPageIdx = 0;
-  theFile.GetPage(&curPage, curPageIdx);
+void DBFile::MoveFirst () {  // starts reading
+  theFile.GetPage(&curPage, curPageIdx=0);
 }
 
 int DBFile::Close () {
@@ -40,18 +41,15 @@ int DBFile::Close () {
 }
 
 void DBFile::Add (Record &rec) {
-  if(theFile.GetLength()==0) return theFile.addRecordToNewPage(&rec);
-  else {
-    Page lastPage;
-    theFile.GetPage(&lastPage, theFile.GetLength()-2); // first page contains no data
-    if(!lastPage.Append(&rec)) // need to create a new page
-      theFile.addRecordToNewPage(&rec);
+  if(!curPage.Append(&rec)) {
+    theFile.addPage(&curPage);   // writes full page
+    addtoNewPage(rec);   // creates a new page with a single record
   }
 }
 
 int DBFile::GetNext (Record &fetchme) {
-  while (curPage.GetFirst(&fetchme)==0) {
-    if(++curPageIdx >= theFile.GetLength()-1) return 0;  // no more records
+  while (!curPage.GetFirst(&fetchme)) {
+    if(++curPageIdx > theFile.lastIndex()) return 0;  // no more records
     theFile.GetPage(&curPage, curPageIdx);
   }
   return 1;
@@ -60,7 +58,7 @@ int DBFile::GetNext (Record &fetchme) {
 int DBFile::GetNext (Record &fetchme, CNF &cnf, Record &literal) {
   ComparisonEngine comp;
   while(GetNext(fetchme)) {
-    if(comp.Compare(&fetchme, &literal, &cnf)) return 1;
+    if(comp.Compare(&fetchme, &literal, &cnf)) return 1;   // matched
   }
-  return 0;
+  return 0;  // no matching records
 }

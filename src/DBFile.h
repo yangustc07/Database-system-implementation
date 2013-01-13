@@ -23,6 +23,8 @@ public:
   void Load (Schema &myschema, char *loadpath);
 
   void MoveFirst ();
+
+  // this function does not deal with spanned records
   void Add (Record &addme);
   int GetNext (Record &fetchme);
   int GetNext (Record &fetchme, CNF &cnf, Record &literal);
@@ -31,5 +33,10 @@ private:
   off_t curPageIdx;
   Page curPage;
   File theFile;
+
+  inline void addtoNewPage(Record& rec) {
+    curPage.EmptyItOut();
+    curPage.Append(&rec);
+  }
 };
 #endif

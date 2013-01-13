@@ -10,14 +10,11 @@
 
 
 
-Page :: Page () {
-	curSizeInBytes = sizeof (int);
-	numRecs = 0;
-
+Page :: Page(): curSizeInBytes(sizeof(int)), numRecs(0) {
 	myRecs = new (std::nothrow) TwoWayList<Record>;
 	if (myRecs == NULL)
 	{
-		cout << "ERROR : Not enough memory. EXIT !!!\n";
+		cerr << "ERROR : Not enough memory. EXIT !!!\n";
 		exit(1);
 	}
 }
@@ -213,7 +210,7 @@ void File :: AddPage (Page *addMe, off_t whichPage) {
 	char *bits = new (std::nothrow) char[PAGE_SIZE];
 	if (bits == NULL)
 	{
-		cout << "ERROR : Not enough memory. EXIT !!!\n";
+		cerr << "ERROR : Not enough memory. EXIT !!!\n";
 		exit(1);
 	}
 
@@ -221,7 +218,7 @@ void File :: AddPage (Page *addMe, off_t whichPage) {
 	lseek (myFilDes, PAGE_SIZE * whichPage, SEEK_SET);
 	write (myFilDes, bits, PAGE_SIZE);
 	delete [] bits;
-#ifdef F_DEBUG
+#ifdef DEBUG
 	cerr << " File: curLength " << curLength << " whichPage " << whichPage << endl;
 #endif
 }
@@ -261,12 +258,6 @@ void File :: Open (int fileLen, char *fName) {
 	}
 
 }
-
-
-off_t File :: GetLength () {
-	return curLength;
-}
-
 
 int File :: Close () {
 

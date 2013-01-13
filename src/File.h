@@ -43,6 +43,11 @@ public:
 	// empty it out
 	void EmptyItOut ();
 
+        /**
+         * test if the page is empty
+         * @return true if the page is empty
+         */
+        bool empty() const { return numRecs==0; }
 };
 
 
@@ -58,7 +63,12 @@ public:
 	~File ();
 
 	// returns the current length of the file, in pages
-	off_t GetLength ();
+	off_t GetLength () const { return curLength; }
+
+        /**
+         * gets the index of the last page in the file
+         */
+        off_t lastIndex() const { return curLength-2; }
 
 	// opens the given file; the first parameter tells whether or not to
 	// create the file.  If the parameter is zero, a new file is created
@@ -75,15 +85,26 @@ public:
 	// are before the page to be written are zeroed out
 	void AddPage (Page *addMe, off_t whichPage);
 
-        void addRecordToNewPage(Record* rec) {
-          Page newPage;
-          newPage.Append(rec);
-          AddPage(&newPage, GetLength());
-        }
-
 	// closes the file and returns the file length (in number of pages)
 	int Close ();
 
+        /**
+         * gets the last page
+         * @param putItHere indicates where to put the last page
+         */
+        void getLastPage(Page* putItHere) {
+          if(curLength==0) putItHere = NULL;
+          else return GetPage(putItHere, lastIndex());
+        }
+
+        /**
+         * adds one page to the end
+         * @param addMe the page to add
+         */
+        void addPage(Page* addMe) {
+          if(curLength==0) AddPage(addMe, 0);
+          else AddPage(addMe, lastIndex()+1);
+        }
 };
 
 
