@@ -2,10 +2,20 @@
 #include "DBFile.h"
 #include "test.h"
 
+#ifndef CISE     // local machine
+#define DBFILE_DIR ""
+#define TPCH_DIR "../data/10M/"
+#define CATALOG_PATH "catalog"
+#else            // department machine
+#define DBFILE_DIR ""
+#define TPCH_DIR "/cise/tmp/dbi_sp11/DATA/10M/"
+#define CATALOG_PATH "catalog"
+#endif // CISE
+
 // make sure that the file path/dir information below is correct
-char *dbfile_dir = ""; // dir where binary heap files should be stored
-char *tpch_dir ="../data/10M/"; // dir where dbgen tpch files (extension *.tbl) can be found
-char *catalog_path = "catalog"; // full path of the catalog file
+char *dbfile_dir = DBFILE_DIR; // dir where binary heap files should be stored
+char *tpch_dir = TPCH_DIR; // dir where dbgen tpch files (extension *.tbl) can be found
+char *catalog_path = CATALOG_PATH; // full path of the catalog file
 
 using namespace std;
 
