@@ -2,6 +2,8 @@
 #include "DBFile.h"
 #include "test.h"
 
+//#define CISE
+
 #ifndef CISE     // local machine
 #define DBFILE_DIR ""
 #define TPCH_DIR "../data/10M/"
