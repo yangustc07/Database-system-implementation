@@ -2,8 +2,19 @@
 #include "BigQ.h"
 #include <pthread.h>
 
-void *producer (void *arg) {
+//#define CISE
 
+#ifndef CISE     // local machine
+#define DBFILE_DIR ""
+#define TPCH_DIR "../data/10M/"
+#define CATALOG_PATH "catalog"
+#else            // department machine
+#define DBFILE_DIR ""
+#define TPCH_DIR "/cise/tmp/dbi_sp11/DATA/10M/"
+#define CATALOG_PATH "catalog"
+#endif // CISE
+
+void *producer (void *arg) {
 	Pipe *myPipe = (Pipe *) arg;
 
 	Record temp;
