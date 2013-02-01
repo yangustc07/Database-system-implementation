@@ -1,17 +1,33 @@
 #ifndef TEST_H
 #define TEST_H
 #include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
+#include <stdlib.h>
+#include "Pipe.h"
 #include "DBFile.h"
 #include "Record.h"
+
 using namespace std;
+
+// make sure that the information below is correct
+
+char *catalog_path = "catalog"; 
+char *tpch_dir ="/cise/tmp/dbi_sp11/DATA/10M/"; // dir where dbgen tpch files (extension *.tbl) can be found
+char *dbfile_dir = ""; 
+
 
 extern "C" {
 	int yyparse(void);   // defined in y.tab.c
 }
 
 extern struct AndList *final;
+
+typedef struct {
+	Pipe *pipe;
+	OrderMaker *order;
+	bool print;
+	bool write;
+}testutil;
 
 class relation {
 
@@ -37,12 +53,29 @@ public:
 	void get_cnf (CNF &cnf_pred, Record &literal) {
 		cout << " Enter CNF predicate (when done press ctrl-D):\n\t";
   		if (yyparse() != 0) {
-			std::cout << "Can't parse your CNF.\n";
+			cout << "Can't parse your CNF.\n";
 			exit (1);
 		}
 		cnf_pred.GrowFromParseTree (final, schema (), literal); // constructs CNF predicate
 	}
+	void get_sort_order (OrderMaker &sortorder) {
+		cout << "\n specify sort ordering (when done press ctrl-D):\n\t ";
+  		if (yyparse() != 0) {
+			cout << "Can't parse your sort CNF.\n";
+			exit (1);
+		}
+		cout << " \n";
+		Record literal;
+		CNF sort_pred;
+		sort_pred.GrowFromParseTree (final, schema (), literal); // constructs CNF predicate
+		OrderMaker dummy;
+		sort_pred.GetSortOrders (sortorder, dummy);
+	}
 };
+
+
+relation *rel;
+
 
 char *supplier = "supplier"; 
 char *partsupp = "partsupp"; 
@@ -55,7 +88,7 @@ char *lineitem = "lineitem";
 
 relation *s, *p, *ps, *n, *li, *r, *o, *c;
 
-void setup (char *catalog_path, char *dbfile_dir, char *tpch_dir) {
+void setup () {
 	cout << " \n** IMPORTANT: MAKE SURE THE INFORMATION BELOW IS CORRECT **\n";
 	cout << " catalog location: \t" << catalog_path << endl;
 	cout << " tpch files dir: \t" << tpch_dir << endl;
