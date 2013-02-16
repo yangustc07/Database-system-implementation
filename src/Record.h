@@ -14,7 +14,7 @@
 #include "Comparison.h"
 #include "ComparisonEngine.h"
 
-
+class BigQ;
 
 // Basic record data structure. Data is actually stored in "bits" field. The layout of bits is as follows:
 //	1) First sizeof(int) bytes: length of the record in bytes
@@ -26,6 +26,7 @@ class Record {
 
 friend class ComparisonEngine;
 friend class Page;
+friend class BigQ;
 
 private:
 	char *bits;

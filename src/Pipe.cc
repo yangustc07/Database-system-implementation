@@ -69,7 +69,7 @@ void Pipe :: Insert (Record *insertMe) {
 
 
 int Pipe :: Remove (Record *removeMe) {
-	 
+	//DEBUGCODE
 	// first, get a mutex on the pipeline
 	pthread_mutex_lock (&pipeMutex);
 
@@ -82,28 +82,25 @@ int Pipe :: Remove (Record *removeMe) {
 	// if there is not, then we need to wait until the producer
 	// puts some data into the pipeline
 	} else {
-
 		// the pipeline is empty so we first see if this
 		// is because it was turned off
 		if (done) {
-
 			pthread_mutex_unlock (&pipeMutex);
 			return 0;
 		}
 
 		// wait until there is something there
 		pthread_cond_wait (&consumerVar, &pipeMutex);
-
 		// since the producer may have decided to turn off
 		// the pipe, we need to check if it is still open
 		if (done && lastSlot == firstSlot) {
+			//cout<<"Pipeline Shutdown2"<<endl;
 			pthread_mutex_unlock (&pipeMutex);
 			return 0;
 		}
 
 		removeMe->Consume (&buffered [firstSlot % totSpace]);
 	}
-	
 	// note that we have deleted a record
 	firstSlot++;
 

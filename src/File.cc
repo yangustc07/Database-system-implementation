@@ -205,7 +205,6 @@ void File :: AddPage (Page *addMe, off_t whichPage) {
 		// set the size
 		curLength = whichPage + 1;	
 	}
-
 	// now write the page
 	char *bits = new (std::nothrow) char[PAGE_SIZE];
 	if (bits == NULL)

@@ -5,12 +5,12 @@
 //#define CISE
 
 #ifndef CISE     // local machine
-#define DBFILE_DIR ""
-#define TPCH_DIR "../data/10M/"
+#define DBFILE_DIR "../DATA/"
+#define TPCH_DIR "../data/"
 #define CATALOG_PATH "catalog"
 #else            // department machine
-#define DBFILE_DIR ""
-#define TPCH_DIR "/cise/tmp/dbi_sp11/DATA/10M/"
+#define DBFILE_DIR "../DATA/"
+#define TPCH_DIR "../DATA/"
 #define CATALOG_PATH "catalog"
 #endif // CISE
 
@@ -27,7 +27,7 @@ void *producer (void *arg) {
 
 	while (dbfile.GetNext (temp) == 1) {
 		counter += 1;
-		if (counter%100000 == 0) {
+		if (counter%10000 == 0) {
 			 cerr << " producer: " << counter << endl;	
 		}
 		myPipe->Insert (&temp);
