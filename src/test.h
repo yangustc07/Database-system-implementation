@@ -1,19 +1,20 @@
 #ifndef TEST_H
 #define TEST_H
 #include <stdio.h>
-#include <iostream>
 #include <stdlib.h>
+#include <iostream>
+#include <math.h>
+
 #include "Pipe.h"
 #include "DBFile.h"
 #include "Record.h"
-
 using namespace std;
 
 // make sure that the information below is correct
 
 char *catalog_path = "catalog"; 
-char *tpch_dir ="../DATA/"; // dir where dbgen tpch files (extension *.tbl) can be found
-char *dbfile_dir = "../DATA/"; 
+char *dbfile_dir = ""; 
+char *tpch_dir ="/cise/tmp/dbi_sp11/DATA/1G/"; 
 
 
 extern "C" {
@@ -51,9 +52,9 @@ public:
 	}
 
 	void get_cnf (CNF &cnf_pred, Record &literal) {
-		cout << " Enter CNF predicate (when done press ctrl-D):\n\t";
+		cout << "\n enter CNF predicate (when done press ctrl-D):\n\t";
   		if (yyparse() != 0) {
-			cout << "Can't parse your CNF.\n";
+			cout << " Error: can't parse your CNF.\n";
 			exit (1);
 		}
 		cnf_pred.GrowFromParseTree (final, schema (), literal); // constructs CNF predicate
@@ -61,10 +62,9 @@ public:
 	void get_sort_order (OrderMaker &sortorder) {
 		cout << "\n specify sort ordering (when done press ctrl-D):\n\t ";
   		if (yyparse() != 0) {
-			cout << "Can't parse your sort CNF.\n";
+			cout << " Error: can't parse your CNF.\n";
 			exit (1);
 		}
-		cout << " \n";
 		Record literal;
 		CNF sort_pred;
 		sort_pred.GrowFromParseTree (final, schema (), literal); // constructs CNF predicate
