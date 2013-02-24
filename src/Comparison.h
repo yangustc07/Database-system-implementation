@@ -1,6 +1,8 @@
 #ifndef COMPARISON_H
 #define COMPARISON_H
 
+#include <iostream>
+
 #include "Record.h"
 #include "Schema.h"
 #include "File.h"
@@ -59,6 +61,10 @@ public:
 
 	// print to the screen
 	void Print ();
+
+  // read/write OrderMaker in text format
+  friend std::ostream& operator<<(std::ostream& os, const OrderMaker& myorder);
+  friend std::istream& operator>>(std::istream& is, OrderMaker& myorder);
 };
 
 class Record;

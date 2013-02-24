@@ -5,7 +5,6 @@
 
 #include "Comparison.h"
 
-
 Comparison::Comparison()
 {
 }
@@ -117,7 +116,21 @@ void OrderMaker :: Print () {
 	}
 }
 
+std::ostream& operator<<(std::ostream& os, const OrderMaker& myorder) {
+  os << myorder.numAtts << ' ';
+  for(int i=0; i<myorder.numAtts; ++i) os << myorder.whichAtts[i] << ' ';
+  for(int i=0; i<myorder.numAtts; ++i) os << myorder.whichTypes[i] << ' ';
+  os << std::endl;
+}
 
+std::istream& operator>>(std::istream& is, OrderMaker& myorder) {
+  is >> myorder.numAtts;
+  for(int i=0; i<myorder.numAtts; ++i) is >> myorder.whichAtts[i];
+  for(int i=0; i<myorder.numAtts; ++i) {
+    int t; is >> t;
+    myorder.whichTypes[i] = static_cast<Type>(t);
+  }
+}
 
 int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 
