@@ -22,7 +22,6 @@
         containers and maps
 */
 
-
 // Helper macros for Frequently Done Actions
 // Macro to streamline scan of STL container
 // list "list" is scanned and element is local variable that is
@@ -51,7 +50,7 @@
     typeof(*it)& el = *it;
 
 #define FOREACH_STL_MAP(key, val, map) \
-    for( typeof((map).begin()) it = (map).begin(); it != (map).end(); ++it  ) { \
+    for(typeof((map).begin()) it = (map).begin(); it != (map).end(); ++it  ) { \
     typeof(it->first) & key = it->first; \
     typeof(it->second) & val = it->second;
 

@@ -65,6 +65,8 @@ public:
 	// returns the current length of the file, in pages
 	off_t GetLength () const { return curLength; }
 
+        bool empty() const { return curLength==0; }
+      
         /**
          * gets the index of the last page in the file
          */
@@ -93,7 +95,7 @@ public:
          * @param putItHere indicates where to put the last page
          */
         void getLastPage(Page* putItHere) {
-          if(curLength==0) putItHere = NULL;
+          if(empty()) putItHere = NULL;
           else return GetPage(putItHere, lastIndex());
         }
 
@@ -102,11 +104,9 @@ public:
          * @param addMe the page to add
          */
         void addPage(Page* addMe) {
-          if(curLength==0) AddPage(addMe, 0);
+          if(empty()) AddPage(addMe, 0);
           else AddPage(addMe, lastIndex()+1);
         }
 };
-
-
 
 #endif

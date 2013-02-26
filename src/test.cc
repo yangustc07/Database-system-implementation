@@ -1,6 +1,8 @@
 #include "test.h"
 #include "BigQ.h"
+#include "Errors.h"
 #include <pthread.h>
+#include <iostream>
 void test1 ();
 void test2 ();
 void test3 ();
@@ -39,7 +41,7 @@ void test1 () {
 
 	DBFile dbfile;
 	cout << "\n output to dbfile : " << rel->path () << endl;
-	dbfile.Create (rel->path(), sorted, &startup);
+	dbfile.Create (rel->path(), SORTED, &startup);
 	dbfile.Close ();
 
 	char tbl_path[100];
@@ -47,6 +49,7 @@ void test1 () {
 	cout << " input from file : " << tbl_path << endl;
 
         FILE *tblfile = fopen (tbl_path, "r");
+        FATALIF(tblfile==NULL, "Open file error.");
 
 	srand48 (time (NULL));
 

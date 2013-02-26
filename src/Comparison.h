@@ -14,6 +14,7 @@
 class Comparison {
 
 	friend class ComparisonEngine;
+        friend class OrderMaker;
 	friend class CNF;
 
 	Target operand1;
@@ -33,11 +34,12 @@ public:
 	Comparison(const Comparison &copyMe);
 
 	// print to the screen
-	void Print ();
+	void Print () const;
 };
 
 
 class Schema;
+class CNF;
 
 // This structure encapsulates a sort order for records
 class OrderMaker {
@@ -59,12 +61,22 @@ public:
 	// based upon ALL of their attributes
 	OrderMaker(Schema *schema);
 
+        // construct a query order to answer query based on the sort information.
+        // used in sorted file implementation.
+        static void queryOrderMaker(const OrderMaker& sortOrder, const CNF& query,
+                                    OrderMaker& queryorder, OrderMaker& cnforder);
+
 	// print to the screen
-	void Print ();
+	void Print () const;
 
   // read/write OrderMaker in text format
   friend std::ostream& operator<<(std::ostream& os, const OrderMaker& myorder);
   friend std::istream& operator>>(std::istream& is, OrderMaker& myorder);
+
+private:
+  // find an attribute in the given query.
+  // returns its index or -1 if not found.
+  static int findAttrIn(int att, const CNF& query);
 };
 
 class Record;
@@ -73,7 +85,7 @@ class Record;
 // during query execution
 
 class CNF {
-
+        friend class OrderMaker;
 	friend class ComparisonEngine;
 
 	Comparison orList[MAX_ANDS][MAX_ORS];
@@ -91,7 +103,7 @@ public:
 	int GetSortOrders (OrderMaker &left, OrderMaker &right);
 
 	// print the comparison structure to the screen
-	void Print ();
+	void Print () const;
 
         // this takes a parse tree for a CNF and converts it into a 2-D
         // matrix storing the same CNF expression.  This function is applicable
@@ -103,7 +115,6 @@ public:
         // a relational selection over a single relation so only one schema is used
         void GrowFromParseTree (struct AndList *parseTree, Schema *mySchema, 
 		Record &literal);
-
 };
 
 #endif

@@ -187,7 +187,6 @@ void File :: GetPage (Page *putItHere, off_t whichPage) {
 
 
 void File :: AddPage (Page *addMe, off_t whichPage) {
-
 	// this is because the first page has no data
 	whichPage++;
 
@@ -224,7 +223,6 @@ void File :: AddPage (Page *addMe, off_t whichPage) {
 
 
 void File :: Open (int fileLen, char *fName) {
-
 	// figure out the flags for the system open call
         int mode;
         if (fileLen == 0)
@@ -235,7 +233,7 @@ void File :: Open (int fileLen, char *fName) {
 	// actually do the open
         myFilDes = open (fName, mode, S_IRUSR | S_IWUSR);
 
-#ifdef verbose
+#ifdef DEBUG
 	cout << "Opening file " << fName << " with "<< curLength << " pages.\n";
 #endif
 
@@ -271,5 +269,3 @@ int File :: Close () {
 	return curLength;
 	
 }
-
-

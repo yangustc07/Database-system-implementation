@@ -1,5 +1,4 @@
-
-CC = g++ -O2 -Wno-deprecated
+LDLIBS = -lfl -lpthread
 
 tag = -i
 
@@ -7,48 +6,30 @@ ifdef linux
 tag = -n
 endif
 
-test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o
-	$(CC) -o test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o Pipe.o y.tab.o lex.yy.o test.o -lfl -lpthread
-	
-a2test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o Pipe.o y.tab.o lex.yy.o a2-test.o
-	$(CC) -o a2test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o Pipe.o y.tab.o lex.yy.o a2-test.o -lfl -lpthread
-	
-a1test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o
-	$(CC) -o a1test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o y.tab.o lex.yy.o a1-test.o -lfl
-	
-test.o: test.cc
-	$(CC) -g -c test.cc
+.PHONY: all
+all: CXXFLAGS += -O2
+all: test.out
 
-a2-test.o: a2-test.cc
-	$(CC) -g -c a2-test.cc
+.PHONY: debug
+debug: CXXFLAGS += -g -Wno-deprecated
+debug: CPPFLAGS += -DDEBUG
+debug: clean test.out
 
-a1-test.o: a1-test.cc
-	$(CC) -g -c a1-test.cc
+test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o HeapFile.o SortedFile.o Pipe.o y.tab.o lex.yy.o test.o
+	$(CXX) -o $@ $^ $(LDLIBS)
 
-Comparison.o: Comparison.cc
-	$(CC) -g -c Comparison.cc
-	
-ComparisonEngine.o: ComparisonEngine.cc
-	$(CC) -g -c ComparisonEngine.cc
-	
-Pipe.o: Pipe.cc
-	$(CC) -g -c Pipe.cc
+test.o: test.h Pipe.h DBFile.h Record.h
+DBFile.o: DBFile.h Record.h Schema.h File.h Comparison.h ComparisonEngine.h Errors.h HeapFile.h SortedFile.h
+HeapFile.o: HeapFile.h DBFile.h Record.h Schema.h File.h Comparison.h ComparisonEngine.h Defs.h Errors.h
+SortedFile.o: SortedFile.h DBFile.h BigQ.h
+Comparison.o: Comparison.h ComparisonEngine.h File.h Schema.h Record.h Defs.h
+ComparisonEngine.o: ComparisonEngine.h Comparison.h Record.h Schema.h File.h
+Pipe.o: Pipe.h Record.h
+BigQ.o: BigQ.h Pipe.h File.h Record.h
+File.o: File.h TwoWayList.h Record.h Schema.h Comparison.h ComparisonEngine.h
+Record.o: Record.h Defs.h ParseTree.h Schema.h File.h Comparison.h ComparisonEngine.h
+Schema.o: Schema.h Record.h File.h Comparison.h ComparisonEngine.h
 
-BigQ.o: BigQ.cc
-	$(CC) -g -c BigQ.cc
-
-DBFile.o: DBFile.cc
-	$(CC) -g -c DBFile.cc
-
-File.o: File.cc
-	$(CC) -g -c File.cc
-
-Record.o: Record.cc
-	$(CC) -g -c Record.cc
-
-Schema.o: Schema.cc
-	$(CC) -g -c Schema.cc
-	
 y.tab.o: Parser.y
 	yacc -d Parser.y
 	sed $(tag) y.tab.c -e "s/  __attribute__ ((__unused__))$$/# ifndef __cplusplus\n  __attribute__ ((__unused__));\n# endif/" 
@@ -58,9 +39,6 @@ lex.yy.o: Lexer.l
 	lex  Lexer.l
 	gcc  -c lex.yy.c
 
+.PHONY: clean
 clean: 
-	rm -f *.o
-	rm -f *.out
-	rm -f y.tab.c
-	rm -f lex.yy.c
-	rm -f y.tab.h
+	$(RM) *.o *.out y.tab.c lex.yy.c y.tab.h

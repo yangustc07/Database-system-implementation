@@ -1,0 +1,86 @@
+#ifndef SORTED_FILE_H_
+#define SORTED_FILE_H_
+
+#include <string>
+
+#include "DBFile.h"
+#include "Pipe.h"
+#include "BigQ.h"
+
+class SortedFile: protected DBFileBase {
+  static const size_t PIPE_BUFFER_SIZE = 128;
+  friend class DBFile;
+  using DBFileBase::GetNext;
+
+protected:
+  SortedFile(): mode(READ), myOrder(NULL), runLength(0),
+                in(NULL), out(NULL), biq(NULL), useMem(false) {}
+  ~SortedFile() {}
+
+  int Create (char* fpath, void* startup);
+  int Open (char* fpath);
+  int Close ();
+
+  void Add (Record& addme);
+  void Load (Schema& myschema, char* loadpath);
+
+  void MoveFirst();
+  int GetNext (Record& fetchme);
+  int GetNext (Record& fetchme, CNF& cnf, Record& literal);
+
+private:
+  enum Mode { READ, WRITE } mode;
+  OrderMaker* myOrder;    // may come from startup or meta file; need to differentiate
+  int runLength;
+
+  const char* tpath;
+  std::string table;
+  
+  Pipe *in, *out;
+  BigQ *biq;
+
+  inline void startWrite();
+  inline void startRead();
+
+  inline std::string tmpfName() const;  // temp file name used in the merge phase
+  void merge();    // merge BigQ and File
+
+  int binarySearch(Record& fetchme, OrderMaker& queryorder, Record& literal, OrderMaker& cnforder, ComparisonEngine& cmp);
+
+  bool useMem;     // this is used to indicate whether SortInfo is passed or created
+                   // is is default to false, and set in allocMem()
+  void allocMem();
+  void freeMem();
+
+  void createQ() {
+    in = new Pipe(PIPE_BUFFER_SIZE), out = new Pipe(PIPE_BUFFER_SIZE);
+    biq = new BigQ(*in, *out, *myOrder, runLength);
+  }
+
+  void deleteQ() {
+    delete biq; delete in; delete out;
+    biq = NULL, in = out = NULL;
+  }
+
+  SortedFile(const SortedFile&);
+  SortedFile& operator=(const SortedFile&);
+};
+
+std::string SortedFile::tmpfName() const {
+  std::string p(tpath);
+  return p+".tmp";
+}
+
+void SortedFile::startRead() {
+  if (mode==READ) return;
+  mode = READ;
+  merge();   // merge will delete BigQ in the end
+}
+
+void SortedFile::startWrite() {
+  if (mode==WRITE) return;
+  mode = WRITE;
+  createQ();
+}
+
+#endif
