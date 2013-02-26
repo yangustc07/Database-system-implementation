@@ -17,7 +17,7 @@ extern char* dbfile_dir;
 extern char* tpch_dir;
 
 int SortedFile::Create (char* fpath, void* startup) {
-  table = getTableName(tpath=fpath);
+  table = getTableName((tpath=fpath).c_str());
   typedef struct { OrderMaker* o; int l; } *pOrder;
   pOrder po = (pOrder)startup;
   myOrder = po -> o;
@@ -27,7 +27,7 @@ int SortedFile::Create (char* fpath, void* startup) {
 
 int SortedFile::Open (char* fpath) {
   allocMem();
-  table = getTableName(tpath=fpath);
+  table = getTableName((tpath=fpath).c_str());
   int ftype;
   ifstream ifs(metafName());
   FATALIF(!ifs, "Meta file missing.");
@@ -107,7 +107,7 @@ void SortedFile::merge() {
 
   // write back
   tmp.Close();
-  FATALIF(rename(tmpfName(), tpath), "Merge write failed.");  // rename returns 0 on success
+  FATALIF(rename(tmpfName(), tpath.c_str()), "Merge write failed.");  // rename returns 0 on success
   deleteQ();
 }
 

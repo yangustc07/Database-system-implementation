@@ -33,7 +33,7 @@ private:
   OrderMaker* myOrder;    // may come from startup or meta file; need to differentiate
   int runLength;
 
-  const char* tpath;
+  std::string tpath;
   std::string table;
   
   Pipe *in, *out;
@@ -68,8 +68,7 @@ private:
 };
 
 const char* SortedFile::tmpfName() const {
-  std::string p(tpath);
-  return (p+".tmp").c_str();
+  return (tpath+".tmp").c_str();
 }
 
 void SortedFile::startRead() {
