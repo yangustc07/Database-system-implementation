@@ -126,10 +126,10 @@ int SortedFile::binarySearch(Record& fetchme, OrderMaker& queryorder, Record& li
     else high = mid;  // even if they're equal, we need to find the *first* such record
   }
 
-  do {   // scan that page for the record matching record literal
+  while (result<0) {   // scan that page for the record matching record literal
     if (!GetNext(fetchme)) return 0;
     result = cmp.Compare(&fetchme, &queryorder, &literal, &cnforder);
-  } while (result<0);
+  }
   return result==0;
 }
 
