@@ -11,7 +11,6 @@
 using namespace std;
 
 // make sure that the information below is correct
-
 #ifndef CISE
 char *catalog_path = "catalog"; 
 char *dbfile_dir = ""; 
@@ -19,7 +18,7 @@ char *tpch_dir ="../data/1G/";
 #else
 char *catalog_path = "catalog"; 
 char *dbfile_dir = ""; 
-char *tpch_dir ="/cise/tmp/dbi_sp11/DATA/1G/"; 
+char *tpch_dir ="/cise/tmp/dbi_sp11/DATA/1G/";
 #endif
 
 extern "C" {

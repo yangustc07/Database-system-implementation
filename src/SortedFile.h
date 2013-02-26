@@ -42,9 +42,10 @@ private:
   inline void startWrite();
   inline void startRead();
 
-  inline std::string tmpfName() const;  // temp file name used in the merge phase
-  void merge();    // merge BigQ and File
+  const char* metafName() const; // meta file name
+  inline const char* tmpfName() const;  // temp file name used in the merge phase
 
+  void merge();    // merge BigQ and File
   int binarySearch(Record& fetchme, OrderMaker& queryorder, Record& literal, OrderMaker& cnforder, ComparisonEngine& cmp);
 
   bool useMem;     // this is used to indicate whether SortInfo is passed or created
@@ -66,9 +67,9 @@ private:
   SortedFile& operator=(const SortedFile&);
 };
 
-std::string SortedFile::tmpfName() const {
+const char* SortedFile::tmpfName() const {
   std::string p(tpath);
-  return p+".tmp";
+  return (p+".tmp").c_str();
 }
 
 void SortedFile::startRead() {

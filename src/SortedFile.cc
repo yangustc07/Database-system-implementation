@@ -12,6 +12,10 @@ using std::ifstream;
 using std::ofstream;
 using std::string;
 
+extern char* catalog_path;
+extern char* dbfile_dir; 
+extern char* tpch_dir;
+
 int SortedFile::Create (char* fpath, void* startup) {
   table = getTableName(tpath=fpath);
   typedef struct { OrderMaker* o; int l; } *pOrder;
@@ -25,7 +29,7 @@ int SortedFile::Open (char* fpath) {
   allocMem();
   table = getTableName(tpath=fpath);
   int ftype;
-  ifstream ifs((table+".meta").c_str());
+  ifstream ifs(metafName());
   FATALIF(!ifs, "Meta file missing.");
   ifs >> ftype >> *myOrder >> runLength;
   ifs.close();
@@ -33,7 +37,7 @@ int SortedFile::Open (char* fpath) {
 }
 
 int SortedFile::Close() {
-  ofstream ofs((table+".meta").c_str());  // write meta data
+  ofstream ofs(metafName());  // write meta data
   ofs << "1\n" << *myOrder << '\n' << runLength << std::endl;
   ofs.close();
   if(mode==WRITE) merge();  // write actual data
@@ -81,7 +85,7 @@ void SortedFile::merge() {
   bool fileNotEmpty = !theFile.empty(), pipeNotEmpty = out->Remove(&fromPipe);
 
   HeapFile tmp;
-  tmp.Create(const_cast<char*>(tmpfName().c_str()), NULL);  // temporary file for the merge result; will be renamed in the end
+  tmp.Create(const_cast<char*>(tmpfName()), NULL);  // temporary file for the merge result; will be renamed in the end
   ComparisonEngine ce;
 
   // initialize
@@ -103,7 +107,7 @@ void SortedFile::merge() {
 
   // write back
   tmp.Close();
-  FATALIF(rename(tmpfName().c_str(), tpath), "Merge write failed.");  // rename returns 0 on success
+  FATALIF(rename(tmpfName(), tpath), "Merge write failed.");  // rename returns 0 on success
   deleteQ();
 }
 
@@ -116,8 +120,8 @@ int SortedFile::binarySearch(Record& fetchme, OrderMaker& queryorder, Record& li
   else if (result == 0) return 1;
 
   // binary search -- this finds the page (not record) that *might* contain the record we want
-  for (off_t low=curPageIdx, high=theFile.lastIndex(); low<high;) {
-    off_t mid = (low+high)/2;
+  off_t low=curPageIdx, high=theFile.lastIndex(), mid=(low+high)/2;
+  for (; low<mid; mid=(low+high)/2) {
     theFile.GetPage(&curPage, mid);
     FATALIF(!GetNext(fetchme), "empty page found");
     result = cmp.Compare(&fetchme, &queryorder, &literal, &cnforder);
@@ -126,11 +130,17 @@ int SortedFile::binarySearch(Record& fetchme, OrderMaker& queryorder, Record& li
     else high = mid;  // even if they're equal, we need to find the *first* such record
   }
 
-  while (result<0) {   // scan that page for the record matching record literal
+  theFile.GetPage(&curPage, low);
+  do {   // scan the located page for the record matching record literal
     if (!GetNext(fetchme)) return 0;
     result = cmp.Compare(&fetchme, &queryorder, &literal, &cnforder);
-  }
+  } while (result<0);
   return result==0;
+}
+
+const char* SortedFile::metafName() const {
+  std::string p(dbfile_dir);
+  return (p+table+".meta").c_str();
 }
 
 void SortedFile::allocMem() {

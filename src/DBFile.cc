@@ -61,6 +61,9 @@ int DBFile::GetNext (Record& fetchme, CNF& cnf, Record& literal) {
   return db->GetNext(fetchme, cnf, literal);
 }
 
+DBFile::DBFile(): db(NULL) {}
+DBFile::~DBFile() { delete db; }
+
 int DBFileBase::Create(char* fpath, void* startup) {
   theFile.Open(0, fpath);
   return 1;
