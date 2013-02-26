@@ -116,7 +116,7 @@ int SortedFile::binarySearch(Record& fetchme, OrderMaker& queryorder, Record& li
   else if (result == 0) return 1;
 
   // binary search -- this finds the page (not record) that *might* contain the record we want
-  for(off_t low=curPageIdx, high=theFile.lastIndex(), mid=(low+high)/2; low!=high;) {
+  for(off_t low=curPageIdx, high=theFile.lastIndex(), mid=(low+high)/2; low<high;) {
     theFile.GetPage(&curPage, mid);
     FATALIF(!GetNext(fetchme), "empty page found");
     result = cmp.Compare(&fetchme, &queryorder, &literal, &cnforder);
