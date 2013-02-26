@@ -73,11 +73,6 @@ int SortedFile::GetNext (Record& fetchme, CNF& cnf, Record& literal) {
     if (cmp.Compare(&fetchme, &literal, &cnf)) return 1;   // matched
   } while(GetNext(fetchme));
   return 0;  // no matching records
-  
-  /*  ComparisonEngine comp;
-  while(GetNext(fetchme))
-    if(comp.Compare(&fetchme, &literal, &cnf)) return 1;   // matched
-  return 0;  // no matching records*/
 }
 
 void SortedFile::merge() {
