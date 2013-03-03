@@ -102,6 +102,12 @@ OrderMaker :: OrderMaker(Schema *schema) {
         }
 }
 
+OrderMaker::OrderMaker(int na, int* atts, Type* types): numAtts(na) {
+  FOREACH_ZIPPED_WITH_INDEX(att, type, atts, types, na, i)
+    UNPACK2(whichAtts[i], whichTypes[i], att, type);
+  END_FOREACH
+}
+
 void OrderMaker::queryOrderMaker(const OrderMaker& sortOrder, const CNF& query,
                                  OrderMaker& queryorder, OrderMaker& cnforder)
 {

@@ -5,10 +5,15 @@
 #define MAX_ORS 20
 
 #define PAGE_SIZE 131072
+#define PIPE_SIZE 128
 
 #define FOREACH(el, array, n)   \
   for (typeof(array) p=array; p!=array+(n); ++p) {      \
   typeof(*p) & el = *p;
+
+#define FOREACH_WITH_INDEX(el, array, n, i)     \
+  for (size_t i=0; i<(n); ++i) {       \
+  typeof(array[i]) & el = array[i];
 
 #define FOREACH_ZIPPED(el1, el2, array1, array2, n)  \
   for (size_t _ii=0; _ii<(n); ++_ii) {               \

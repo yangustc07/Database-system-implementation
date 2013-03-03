@@ -31,7 +31,7 @@ private:
 };
 
 
-
+// make sure to set a seed before generating the temporary file.
 class BigQ {
 public:
 	Pipe &Qin;
@@ -51,6 +51,22 @@ public:
 	~BigQ ();
 
 	static void *Working(void *biq);
+
+private:
+  static int cnt;
+  static const char* tmpfName();
+  static void genRandom(char *s, const int len) {
+    static const char alphanum[] =
+      "0123456789"
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "abcdefghijklmnopqrstuvwxyz";
+
+    for (int i = 0; i < len; ++i) {
+      s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+
+    s[len] = 0;
+  }
 };
 
 #endif

@@ -1,3 +1,7 @@
+#include <string>
+#include <cstdlib>
+#include <sstream>
+
 #include "BigQ.h"
 
 //Comparison function object
@@ -21,6 +25,17 @@ bool Sorter2::operator()(pair<int, Record *> i, pair<int, Record *> j){
 			return true;
 }
 
+int BigQ::cnt = 0;
+
+const char* BigQ::tmpfName() {
+  const size_t LEN = 10;
+  std::ostringstream oss;
+  char rstr[LEN];
+  genRandom(rstr, LEN);
+  oss << "biq" << (++cnt) << rstr << ".tmp";
+  std::string name = oss.str();
+  return name.c_str();
+}
 
 BigQ :: BigQ (Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen):
 Qin(in), Qout(out), Qsortorder(sortorder), Qrunlen(runlen), mysorter(sortorder), mysorter2(sortorder) {
@@ -33,7 +48,7 @@ Qin(in), Qout(out), Qsortorder(sortorder), Qrunlen(runlen), mysorter(sortorder),
 	}
 	curPage = new Page();
 	theFile = new File();
-	theFile->Open(0, "BigQ.temp");
+	theFile->Open(0, (char*)tmpfName());
 }
 
 BigQ::~BigQ () {

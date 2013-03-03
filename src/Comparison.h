@@ -43,7 +43,6 @@ class CNF;
 
 // This structure encapsulates a sort order for records
 class OrderMaker {
-
 	friend class ComparisonEngine;
 	friend class CNF;
 
@@ -60,6 +59,11 @@ public:
 	// create an OrderMaker that can be used to sort records
 	// based upon ALL of their attributes
 	OrderMaker(Schema *schema);
+
+        OrderMaker(int na, int* atts, Type* types);
+
+        int getNumAtts() const { return numAtts; }
+        const int* getAtts() const { return whichAtts; }
 
         // construct a query order to answer query based on the sort information.
         // used in sorted file implementation.

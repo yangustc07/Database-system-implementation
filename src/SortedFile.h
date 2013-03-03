@@ -6,9 +6,10 @@
 #include "DBFile.h"
 #include "Pipe.h"
 #include "BigQ.h"
+#include "Defs.h"
 
 class SortedFile: protected DBFileBase {
-  static const size_t PIPE_BUFFER_SIZE = 128;
+  static const size_t PIPE_BUFFER_SIZE = PIPE_SIZE;
   friend class DBFile;
   using DBFileBase::GetNext;
 

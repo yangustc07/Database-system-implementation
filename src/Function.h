@@ -45,6 +45,15 @@ public:
 
 	// applies the function to the given record and returns the result
 	Type Apply (Record &toMe, int &intResult, double &doubleResult);
+
+        template <class T>
+        T Apply (Record& toMe) {
+          int intResult; double doubleResult;
+          Apply (toMe, intResult, doubleResult);
+          return returnsInt ? intResult : doubleResult;
+        }
+
+        Type resultType() const { return returnsInt ? Int : Double; }
 };
 
 #endif
