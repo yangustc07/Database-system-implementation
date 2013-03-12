@@ -514,9 +514,9 @@ void Record::Write(FILE* file, Schema* mySchema) {
     //fprintf(file, "]");
 
     // print out a comma as needed to make things pretty
-    if (i != n - 1) {
-      fprintf(file, ", ");
-    }
+    // if (i != n - 1) {
+      fprintf(file, "|");
+    //}
   }
 
   fprintf(file, "\n");

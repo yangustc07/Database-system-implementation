@@ -84,10 +84,6 @@ void DBFileBase::Load (Schema& myschema, char* loadpath) {
   theFile.addPage(&curPage);  // writes the last page
 }
 
-void DBFileBase::MoveFirst() {
-  theFile.GetPage(&curPage, curPageIdx=0);
-}
-
 int DBFileBase::GetNext (Record& fetchme) {
   while (!curPage.GetFirst(&fetchme)) {
     if(++curPageIdx > theFile.lastIndex()) return 0;  // no more records

@@ -57,7 +57,7 @@ void SortedFile::Load (Schema& myschema, char* loadpath) {
 
 void SortedFile::MoveFirst () {
   startRead();
-  DBFileBase::MoveFirst();
+  theFile.GetPage(&curPage, curPageIdx=0);
 }
 
 int SortedFile::GetNext (Record& fetchme) {
@@ -90,7 +90,7 @@ void SortedFile::merge() {
 
   // initialize
   if (fileNotEmpty) {
-    DBFileBase::MoveFirst();
+    theFile.GetPage(&curPage, curPageIdx=0);           // move first
     fileNotEmpty = GetNext(fromFile);
   }
 

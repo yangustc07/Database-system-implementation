@@ -45,6 +45,7 @@ private:
   static void* work(void* param);
 };
 
+// please be aware that the nested loops join assumes that LHS is the smaller relation
 class Project: public RelationalOp { 
 public:
   void Run (Pipe& inPipe, Pipe& outPipe, int* keepMe, int numAttsInput, int numAttsOutput);
@@ -63,7 +64,7 @@ public:
 private:
   MAKE_STRUCT3(Args, Pipe*, Pipe*, Function*);
   static void* work(void* param);
-  template <class T> static void* doSum(Pipe* in, Pipe* out, Function* func);
+  template <class T> static void doSum(Pipe* in, Pipe* out, Function* func);
 };
 
 class SortBasedOp: public RelationalOp {
@@ -75,6 +76,7 @@ protected:
   size_t runLength;
 };
 
+class JoinBuffer;
 class Join: public SortBasedOp { 
 public:
   void Run (Pipe &inPipeL, Pipe &inPipeR, Pipe &outPipe, CNF &selOp, Record &literal);
@@ -82,9 +84,11 @@ public:
 private:
   MAKE_STRUCT6(Args, Pipe*, Pipe*, Pipe*, CNF*, Record*, size_t);
   static void* work(void* param);
-  static void* sortMergeJoin(Pipe* pleft, OrderMaker* orderLeft, Pipe* pright, OrderMaker* orderRight, Pipe* pout,
+  static void sortMergeJoin(Pipe* pleft, OrderMaker* orderLeft, Pipe* pright, OrderMaker* orderRight, Pipe* pout,
                              CNF* sel, Record* literal, size_t runLen);
-  static void* nestedLoopJoin(Pipe* pout);
+  static void nestedLoopJoin(Pipe* pleft, Pipe* pright, Pipe* pout, CNF* sel, Record* literal, size_t runLen);
+  static void joinBuf(JoinBuffer& buffer, DBFile& file, Pipe& out, Record& literal, CNF& sleOp);
+  static void dumpFile(Pipe& in, DBFile& out);
 };
 
 class JoinBuffer {
@@ -92,7 +96,7 @@ class JoinBuffer {
   JoinBuffer(size_t npages);
   ~JoinBuffer();
  
-  void add (Record& addme);
+  bool add (Record& addme);
   void clear () { size=nrecords=0; }
 
   size_t size, capacity;   // in bytes
@@ -117,7 +121,7 @@ private:
   MAKE_STRUCT5(Args, Pipe*, Pipe*, OrderMaker*, Function*, size_t);
   static void* work(void* param);
   template <class T>
-  static void* doGroup(Pipe* in, Pipe* out, OrderMaker* order, Function* func, size_t runLen);
+  static void doGroup(Pipe* in, Pipe* out, OrderMaker* order, Function* func, size_t runLen);
   template <class T>
   static void putGroup(Record& cur, const T& sum, Pipe* out, OrderMaker* order) {
     cur.Project(order->getAtts(), order->getNumAtts(), cur.numAtts());
@@ -142,17 +146,16 @@ private:
  * template definitions.                                                        *
  ********************************************************************************/
 template <class T>
-void* Sum::doSum(Pipe* in, Pipe* out, Function* func) {
+void Sum::doSum(Pipe* in, Pipe* out, Function* func) {
   T sum=0; Record rec;
   while (in->Remove(&rec))
     sum += func->Apply<T>(rec);
   Record result(sum);
   out->Insert(&result);
-  out->ShutDown();
 }
 
 template <class T>   // similar to duplicate elimination
-void* GroupBy::doGroup(Pipe* in, Pipe* out, OrderMaker* order, Function* func, size_t runLen) {
+void GroupBy::doGroup(Pipe* in, Pipe* out, OrderMaker* order, Function* func, size_t runLen) {
   Pipe sorted(PIPE_SIZE);
   BigQ biq(*in, sorted, *order, (int)runLen);
   Record cur, next;
@@ -169,7 +172,6 @@ void* GroupBy::doGroup(Pipe* in, Pipe* out, OrderMaker* order, Function* func, s
       } else sum += func->Apply<T>(next);
     putGroup(cur, sum, out, order);    // put the last group into the output pipeline
   }
-  out->ShutDown();
 }
 
 #endif

@@ -25,6 +25,11 @@ void HeapFile::Add (Record& addme) {
   }
 }
 
+void HeapFile::MoveFirst() {
+  if (!curPage.empty()) theFile.addPage(&curPage);
+  theFile.GetPage(&curPage, curPageIdx=0);
+}
+
 int HeapFile::GetNext (Record &fetchme, CNF &cnf, Record &literal) {
   ComparisonEngine comp;
   while(GetNext(fetchme))

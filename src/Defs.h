@@ -1,6 +1,8 @@
 #ifndef DEFS_H
 #define DEFS_H
 
+#include <cstdlib>
+
 #define MAX_ANDS 20
 #define MAX_ORS 20
 
@@ -37,5 +39,20 @@ enum CompOperator {LessThan, GreaterThan, Equals};
 enum Type {Int, Double, String};
 
 unsigned int Random_Generate();
+
+class Rstring {
+public:
+  static void gen(char* s, const int len) {
+    static const char alphanum[] =
+      "0123456789"
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "abcdefghijklmnopqrstuvwxyz";
+
+    for (int i=0; i<len; ++i)
+      s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+
+    s[len] = 0;
+  }
+};
 
 #endif

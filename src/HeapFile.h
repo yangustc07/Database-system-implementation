@@ -13,6 +13,8 @@ protected:
 
   int Close ();
   void Add (Record& me);
+
+  void MoveFirst();
   int GetNext (Record& fetchme, CNF& cnf, Record& literal);
 
 private:

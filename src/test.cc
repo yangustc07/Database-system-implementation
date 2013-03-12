@@ -3,6 +3,7 @@
 #include "RelOp.h"
 #include <cstdlib>
 #include <pthread.h>
+#include <iomanip>
 
 Attribute IA = {"int", Int};
 Attribute SA = {"string", String};
@@ -33,7 +34,7 @@ int clear_pipe (Pipe &in_pipe, Schema *schema, Function &func, bool print) {
 		sum += (ival + dval);
 		cnt++;
 	}
-	cout << " Sum: " << sum << endl;
+	cout << " Sum: " << setprecision(8) << sum << endl;
 	return cnt;
 }
 int pipesz = 100; // buffer sz allowed for each pipe
@@ -111,15 +112,14 @@ void q1 () {
 // select p_partkey(0), p_name(1), p_retailprice(7) from part where (p_retailprice > 931.01) AND (p_retailprice < 931.3);
 // expected output: 12 records
 void q2 () {
-
 	char *pred_p = "(p_retailprice > 931.01) AND (p_retailprice < 931.3)";
 	init_SF_p (pred_p, 100);
 
 	Project P_p;
-        Pipe _out (pipesz);
-        int keepMe[] = {0,7,1};
-        int numAttsIn = pAtts;
-        int numAttsOut = 3;
+		Pipe _out (pipesz);
+		int keepMe[] = {0,1,7};
+		int numAttsIn = pAtts;
+		int numAttsOut = 3;
 	P_p.Use_n_Pages (buffsz);
 
 	SF_p.Run (dbf_p, _p, cnf_p, lit_p);
@@ -128,9 +128,9 @@ void q2 () {
 	SF_p.WaitUntilDone ();
 	P_p.WaitUntilDone ();
 
-	Attribute att3[] = {IA, DA, SA};
+	Attribute att3[] = {IA, SA, DA};
 	Schema out_sch ("out_sch", numAttsOut, att3);
-        int cnt = clear_pipe (_out, &out_sch, true);
+	int cnt = clear_pipe (_out, &out_sch, true);
 
 	cout << "\n\n query2 returned " << cnt << " records \n";
 
@@ -255,8 +255,6 @@ void q5 () {
 // select sum (ps_supplycost) from supplier, partsupp 
 // where s_suppkey = ps_suppkey groupby s_nationkey;
 // expected output: 25 rows
-
-// This plan has many problems
 void q6 () {
 
 	cout << " query6 \n";
@@ -321,7 +319,7 @@ where p_partkey = ps_partkey and
 s_suppkey = ps_suppkey and
 s_acctbal > 2500;
 
-ANSWER: 274251601.96 (5.91 sec)
+ANSWER: 274251601.96 (5.91 sec)  (Mine with projection is 7 sec - Yang)
 
 possible plan:
 	SF(s_acctbal > 2500) => _s
@@ -346,7 +344,93 @@ G: same as T but do it over each group identified by ordermaker
 D: stuff only distinct records into the out_pipe discarding duplicates
 W: write out records from in_pipe to a file using out_schema
 */
-	cout << " TBA\n";
+  cout << " query 7" << endl;
+  char *pred_s = "(s_acctbal > 2500.0)",
+    *pred_ps = "(ps_partkey = ps_partkey)",
+    *pred_p = "(p_partkey = p_partkey)";
+  init_SF_s (pred_s, 100);
+  init_SF_ps (pred_ps, 100);
+  init_SF_p (pred_p, 100);
+
+  Project P_s, P_ps, P_p;
+  Pipe __s (pipesz), __ps (pipesz), __p (pipesz);
+  int keep_s[] = {0}, keep_ps[] = {0,1,3}, keep_p[] = {0};
+  P_s.Use_n_Pages (buffsz);
+  P_ps.Use_n_Pages (buffsz);
+  P_p.Use_n_Pages (buffsz);
+
+  Attribute s_suppkey = {"s_suppkey", Int};
+  Attribute ps_partkey = {"ps_partkey", Int};
+  Attribute ps_suppkey = {"ps_suppkey", Int};
+  Attribute ps_supplycost = {"ps_supplycost", Double};
+  Attribute p_partkey = {"p_partkey", Int};
+
+  Attribute _atts_proj_s[] = {s_suppkey};
+  Attribute _atts_proj_sp[] = {ps_partkey, ps_suppkey, ps_supplycost};
+  Attribute _atts_proj_p[] = {p_partkey};
+
+  int _natts_proj_s = 1, _natts_proj_ps = 3, _natts_proj_p = 1;
+  Schema _sch_proj_s("supplier", 1, _atts_proj_s),
+    _sch_proj_ps("partsupp", 3, _atts_proj_sp),
+    _sch_proj_p("part", 1, _atts_proj_p);
+
+  Join J_s_ps;
+  // left _s
+  // right _ps
+  Pipe _s_ps (pipesz);
+  CNF cnf_s_ps;
+  Record lit_s_ps;
+  get_cnf ("(s_suppkey = ps_suppkey)", &_sch_proj_s, &_sch_proj_ps, cnf_s_ps, lit_s_ps);
+
+  int outAtts = _natts_proj_s + _natts_proj_ps;
+  Attribute joinatt[] = {s_suppkey, ps_partkey, ps_suppkey, ps_supplycost};
+  Schema join_sch ("join_sch", outAtts, joinatt);
+
+  Join J_s_ps_p;
+  Pipe _s_ps_p (pipesz);
+  CNF cnf_s_ps_p;
+  Record lit_s_ps_p;
+  get_cnf ("(ps_partkey = p_partkey)", &join_sch, &_sch_proj_p, cnf_s_ps_p, lit_s_ps_p);
+
+  int out3Atts = _natts_proj_s + _natts_proj_ps + _natts_proj_p;
+  Attribute join3att[] = {s_suppkey, ps_partkey, ps_suppkey, ps_supplycost, p_partkey};
+  Schema join3_sch ("join3_sch", out3Atts, join3att);
+
+  Sum T;
+  // _s (input pipe)
+  Pipe _out (1);
+  Function func;
+  char *str_sum = "(ps_supplycost)";
+  get_cnf (str_sum, &join3_sch, func);
+  func.Print ();
+  T.Use_n_Pages (1);
+
+  SF_s.Run (dbf_s, _s, cnf_s, lit_s);
+  SF_ps.Run (dbf_ps, _ps, cnf_ps, lit_ps);
+  SF_p.Run (dbf_p, _p, cnf_p, lit_p);
+
+  P_s.Run (_s, __s, keep_s, sAtts, 1);
+  P_ps.Run (_ps, __ps, keep_ps, psAtts, 3);
+  P_p.Run (_p, __p, keep_p, pAtts, 1);
+
+  J_s_ps.Run (__s, __ps, _s_ps, cnf_s_ps, lit_s_ps);
+  J_s_ps_p.Run (_s_ps, __p, _s_ps_p, cnf_s_ps_p, lit_s_ps_p);
+
+  T.Run (_s_ps_p, _out, func);
+
+  SF_s.WaitUntilDone ();
+  SF_ps.WaitUntilDone ();
+  SF_p.WaitUntilDone ();
+  P_s.WaitUntilDone ();
+  P_ps.WaitUntilDone ();
+  P_p.WaitUntilDone ();
+  J_s_ps.WaitUntilDone ();
+  J_s_ps_p.WaitUntilDone ();
+  T.WaitUntilDone ();
+
+  Schema sum_sch ("sum_sch", 1, &DA);
+  int cnt = clear_pipe (_out, &sum_sch, true);
+  cout << " query 7 returned " << cnt << " recs \n";
 }
 
 void q8 () { 
@@ -356,17 +440,36 @@ from lineitem
 where l_returnflag = 'R' and l_discount < 0.04 or 
 l_returnflag = 'R' and l_shipmode = 'MAIL';
 
-ANSWER: 671392 rows in set (29.45 sec)
+ANSWER: 671392 rows in set (29.45 sec)   (Mine is 10 seconds - Yang)
+*/        
+  cout << " query 8" << endl;
+  char* pred_li = "(l_returnflag = 'R') AND (l_discount < 0.04 OR l_shipmode = 'MAIL')";
+  init_SF_li (pred_li, 100);
 
+  Project P_li;
+  Pipe __li (pipesz);
+  int keepMe[] = {0,1,2};
+  int numAttsIn = liAtts;
+  int numAttsOut = 3;
+  P_li.Use_n_Pages (buffsz);
 
-possible plan:
-	SF (l_returnflag = 'R' and ...) => _l
-	On _l:
-		P (l_orderkey,l_partkey,l_suppkey) => __l
-	On __l:
-		W (__l)
-*/
-	cout << " TBA\n";
+  WriteOut W;
+  char *fwpath = "ps.w.tmp";
+  FILE *writefile = fopen (fwpath, "w");
+
+  Attribute att3[] = {IA, IA, IA};
+  Schema out_sch ("out_sch", numAttsOut, att3);
+
+  SF_li.Run (dbf_li, _li, cnf_li, lit_li);
+  P_li.Run(_li, __li, keepMe, numAttsIn, numAttsOut);
+  W.Run (__li, writefile, out_sch);
+
+  SF_li.WaitUntilDone ();
+  P_li.WaitUntilDone();
+  W.WaitUntilDone();
+
+  cout << " query 8 finished..output written to file " << fwpath << "\n";
+  fclose(writefile);
 }
 
 int main (int argc, char *argv[]) {

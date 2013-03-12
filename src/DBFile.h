@@ -67,7 +67,7 @@ protected:
   virtual void Load (Schema& myschema, char* loadpath);
 
   // this function does not deal with spanned records
-  virtual void MoveFirst ();
+  virtual void MoveFirst () = 0;
   virtual int GetNext (Record& fetchme);
   virtual int GetNext (Record& fetchme, CNF& cnf, Record& literal) = 0;
 

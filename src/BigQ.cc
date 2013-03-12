@@ -48,7 +48,7 @@ Qin(in), Qout(out), Qsortorder(sortorder), Qrunlen(runlen), mysorter(sortorder),
 	}
 	curPage = new Page();
 	theFile = new File();
-	theFile->Open(0, (char*)tmpfName());
+	theFile->Open(0, (char*)tmpfName());  // need a random name otherwise two or more bigq's would crash
 }
 
 BigQ::~BigQ () {

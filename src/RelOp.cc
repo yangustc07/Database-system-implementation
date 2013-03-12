@@ -5,10 +5,20 @@
 #include "RelOp.h"
 #include "Record.h"
 #include "Errors.h"
+#include "HeapFile.h"
 
 #define FOREACH_INPIPE(rec, in)                 \
   Record rec;                                   \
   while (in->Remove(&rec))
+
+#define FOREACH_INFILE(rec, f)                  \
+  f.MoveFirst();                                \
+  Record rec;                                   \
+  while (f.GetNext(rec))
+
+#ifndef END_FOREACH
+#define END_FOREACH }
+#endif
 
 void SelectFile::Run (DBFile& inFile, Pipe& outPipe, CNF& selOp, Record& literal) {
   PACK_ARGS4(param, &inFile, &outPipe, &selOp, &literal);
@@ -56,7 +66,9 @@ void Sum::Run (Pipe& inPipe, Pipe& outPipe, Function& computeMe) {
 
 void* Sum::work(void* param) {
   UNPACK_ARGS3(Args, param, in, out, func);
-  return func->resultType() == Int ? doSum<int>(in, out, func) : doSum<double>(in, out, func);
+  if (func->resultType() == Int) doSum<int>(in, out, func);
+  else doSum<double>(in, out, func);
+  out->ShutDown();
 }
 
 void Join::Run(Pipe& inPipeL, Pipe& inPipeR, Pipe& outPipe, CNF& selOp, Record& literal) {
@@ -67,12 +79,13 @@ void Join::Run(Pipe& inPipeL, Pipe& inPipeR, Pipe& outPipe, CNF& selOp, Record& 
 void* Join::work(void* param) {
   UNPACK_ARGS6(Args, param, pleft, pright, pout, sel, lit, runLen);
   OrderMaker orderLeft, orderRight;
-  return sel->GetSortOrders(orderLeft, orderRight) ?
-    sortMergeJoin(pleft, &orderLeft, pright, &orderRight, pout, sel, lit, runLen) :
-    nestedLoopJoin(pout);
+  if (sel->GetSortOrders(orderLeft, orderRight)) 
+    sortMergeJoin(pleft, &orderLeft, pright, &orderRight, pout, sel, lit, runLen);
+  else nestedLoopJoin(pleft, pright, pout, sel, lit, runLen);
+  pout->ShutDown();
 }
   
-void* Join::sortMergeJoin(Pipe* pleft, OrderMaker* orderLeft, Pipe* pright, OrderMaker* orderRight, Pipe* pout,
+void Join::sortMergeJoin(Pipe* pleft, OrderMaker* orderLeft, Pipe* pright, OrderMaker* orderRight, Pipe* pout,
                           CNF* sel, Record* literal, size_t runLen) {
   ComparisonEngine cmp;
   Pipe sortedLeft(PIPE_SIZE), sortedRight(PIPE_SIZE);
@@ -89,8 +102,8 @@ void* Join::sortMergeJoin(Pipe* pleft, OrderMaker* orderLeft, Pipe* pright, Orde
       buffer.clear();
       for(previous.Consume(&fromLeft);
           (moreLeft=sortedLeft.Remove(&fromLeft)) && cmp.Compare(&previous, &fromLeft, orderLeft)==0; previous.Consume(&fromLeft))
-        buffer.add(previous);   // gather records of the same value
-      buffer.add(previous);     // remember the last one
+        FATALIF(!buffer.add(previous), "Join buffer exhausted.");   // gather records of the same value
+      FATALIF(!buffer.add(previous), "Join buffer exhausted.");     // remember the last one
       do {       // Join records from right pipe
         FOREACH(rec, buffer.buffer, buffer.nrecords)
           if (cmp.Compare(&rec, &fromRight, literal, sel)) {   // actural join
@@ -101,11 +114,47 @@ void* Join::sortMergeJoin(Pipe* pleft, OrderMaker* orderLeft, Pipe* pright, Orde
       } while ((moreRight=sortedRight.Remove(&fromRight)) && cmp.Compare(buffer.buffer, orderLeft, &fromRight, orderRight)==0);    // read all records from right pipe with equal value
     }
   }
-  pout->ShutDown();
 }
 
-void* Join::nestedLoopJoin(Pipe* pout) {
-  pout->ShutDown();
+void Join::nestedLoopJoin(Pipe* pleft, Pipe* pright, Pipe* pout, CNF* sel, Record* literal, size_t runLen) {
+  DBFile rightFile;
+  dumpFile(*pright, rightFile);
+  JoinBuffer leftBuffer(runLen);
+
+  // nested loops join
+  FOREACH_INPIPE(rec, pleft)
+    if (!leftBuffer.add(rec)) {  // buffer full ==> do join
+      joinBuf(leftBuffer, rightFile, *pout, *literal, *sel);
+      leftBuffer.clear();       // start next chunk of LEFT
+      leftBuffer.add(rec);
+    }
+  joinBuf(leftBuffer, rightFile, *pout, *literal, *sel);   // join the last buffer
+  rightFile.Close();
+}
+
+void Join::joinBuf(JoinBuffer& buffer, DBFile& file, Pipe& out, Record& literal, CNF& selOp) {
+  ComparisonEngine cmp;
+  Record merged;
+
+  FOREACH_INFILE(fromFile, file) {
+    FOREACH(fromBuffer, buffer.buffer, buffer.nrecords)
+      if (cmp.Compare(&fromBuffer, &fromFile, &literal, &selOp)) {   // actural join
+        merged.CrossProduct(&fromBuffer, &fromFile);
+        out.Insert(&merged);
+      }
+    END_FOREACH
+  }
+}
+
+void Join::dumpFile(Pipe& in, DBFile& out) {
+  const int RLEN = 10;
+  char rstr[RLEN];
+  Rstring::gen(rstr, RLEN);  // need a random name otherwise two or more joins would crash
+  std::string tmpName("join");
+  tmpName = tmpName + rstr + ".tmp";
+  out.Create((char*)tmpName.c_str(), HEAP, NULL);
+  Record rec;
+  while (in.Remove(&rec)) out.Add(rec);
 }
 
 void DuplicateRemoval::Run (Pipe& inPipe, Pipe& outPipe, Schema& mySchema) {
@@ -139,8 +188,9 @@ void GroupBy::Run(Pipe &inPipe, Pipe &outPipe, OrderMaker &groupAtts, Function &
 
 void* GroupBy::work(void* param) {
   UNPACK_ARGS5(Args, param, in, out, order, func, runLen);
-  return func->resultType() == Int ? doGroup<int>(in, out, order, func, runLen)
-                                   : doGroup<double>(in, out, order, func, runLen);
+  if (func->resultType() == Int) doGroup<int>(in, out, order, func, runLen);
+  else doGroup<double>(in, out, order, func, runLen);
+  out->ShutDown();
 }
 
 void WriteOut::Run (Pipe &inPipe, FILE *outFile, Schema &mySchema) {
@@ -173,7 +223,8 @@ JoinBuffer::JoinBuffer(size_t npages): size(0), capacity(PAGE_SIZE*npages), nrec
 
 JoinBuffer::~JoinBuffer() { free(buffer); }
 
-void JoinBuffer::add (Record& addme) {
-  FATALIF((size+=addme.getLength())>capacity, "join buffer exhausted.");
+bool JoinBuffer::add (Record& addme) {
+  if((size+=addme.getLength())>capacity) return 0;
   buffer[nrecords++].Consume(&addme);
+  return 1;
 }
