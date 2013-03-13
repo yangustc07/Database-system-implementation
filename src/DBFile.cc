@@ -36,9 +36,7 @@ void DBFile::createFile(fType ftype) {
 }
 
 int DBFile::Close() {
-  int ret = db->Close();
-  db = NULL;
-  return ret;
+  return db->Close();
 }
 
 void DBFile::Add (Record& addme) {
