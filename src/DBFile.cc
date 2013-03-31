@@ -73,6 +73,7 @@ int DBFileBase::Open (char* fpath) {
 }
 
 void DBFileBase::Load (Schema& myschema, char* loadpath) {
+  startWrite();
   FILE* ifp = fopen(loadpath, "r");
   FATALIF(ifp==NULL, loadpath);
 

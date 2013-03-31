@@ -17,6 +17,10 @@ protected:
   void MoveFirst();
   int GetNext (Record& fetchme, CNF& cnf, Record& literal);
 
+protected:
+  void startWrite() { mode = WRITE; }
+  void startRead();
+
 private:
   void addtoNewPage(Record& rec) {
     curPage.EmptyItOut();
@@ -26,5 +30,11 @@ private:
   HeapFile(const HeapFile&);
   HeapFile& operator=(const HeapFile&);
 };
+
+inline void HeapFile::startRead() {
+  if (mode == READ) return;
+  mode = READ;
+  if (!curPage.empty()) theFile.addPage(&curPage);
+}
 
 #endif

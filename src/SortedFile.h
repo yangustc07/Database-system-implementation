@@ -14,7 +14,7 @@ class SortedFile: protected DBFileBase {
   using DBFileBase::GetNext;
 
 protected:
-  SortedFile(): mode(READ), myOrder(NULL), runLength(0),
+  SortedFile(): myOrder(NULL), runLength(0),
                 in(NULL), out(NULL), biq(NULL), useMem(false) {}
   ~SortedFile() {}
 
@@ -29,8 +29,11 @@ protected:
   int GetNext (Record& fetchme);
   int GetNext (Record& fetchme, CNF& cnf, Record& literal);
 
+protected:
+  void startWrite();
+  void startRead();
+
 private:
-  enum Mode { READ, WRITE } mode;
   OrderMaker* myOrder;    // may come from startup or meta file; need to differentiate
   int runLength;
 
@@ -39,9 +42,6 @@ private:
   
   Pipe *in, *out;
   BigQ *biq;
-
-  inline void startWrite();
-  inline void startRead();
 
   const char* metafName() const; // meta file name
   inline const char* tmpfName() const;  // temp file name used in the merge phase
@@ -72,13 +72,13 @@ const char* SortedFile::tmpfName() const {
   return (tpath+".tmp").c_str();
 }
 
-void SortedFile::startRead() {
+inline void SortedFile::startRead() {
   if (mode==READ) return;
   mode = READ;
   merge();   // merge will delete BigQ in the end
 }
 
-void SortedFile::startWrite() {
+inline void SortedFile::startWrite() {
   if (mode==WRITE) return;
   mode = WRITE;
   createQ();
