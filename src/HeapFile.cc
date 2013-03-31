@@ -13,11 +13,12 @@
 HeapFile::HeapFile() {}
 
 int HeapFile::Close () {
-  if (!curPage.empty()) theFile.addPage(&curPage);
+  if (mode == WRITE && !curPage.empty()) theFile.addPage(&curPage);
   return theFile.Close();
 }
 
 void HeapFile::Add (Record& addme) {
+  startWrite();
   if(!curPage.Append(&addme)) {
     theFile.addPage(&curPage);   // writes full page
     curPage.EmptyItOut();
@@ -26,7 +27,7 @@ void HeapFile::Add (Record& addme) {
 }
 
 void HeapFile::MoveFirst() {
-  if (!curPage.empty()) theFile.addPage(&curPage);
+  startRead();
   theFile.GetPage(&curPage, curPageIdx=0);
 }
 

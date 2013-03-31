@@ -56,7 +56,7 @@ private:
 class DBFileBase {
   friend class DBFile;
 protected:
-  DBFileBase() {}
+  DBFileBase(): mode(READ) {}
   virtual ~DBFileBase() {};
 
   virtual int Create (char* fpath, void* startup);
@@ -82,6 +82,12 @@ protected:
   off_t curPageIdx;
   Page curPage;
   File theFile;
+
+protected:
+  enum Mode { READ, WRITE } mode;
+
+  virtual void startWrite() = 0;
+  virtual void startRead() = 0;
 
 private:
   DBFileBase(const DBFileBase&);
