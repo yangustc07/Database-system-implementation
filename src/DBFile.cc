@@ -81,7 +81,7 @@ void DBFileBase::Load (Schema& myschema, char* loadpath) {
   Record next;
   curPage.EmptyItOut();  // creates the first page
   while (next.SuckNextRecord(&myschema, ifp)) Add(next);
-  theFile.addPage(&curPage);  // writes the last page
+  // theFile.addPage(&curPage);  // writes the last page  -- added in close()
 }
 
 void DBFileBase::MoveFirst() {
