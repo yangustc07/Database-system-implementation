@@ -19,7 +19,7 @@ run: test.out
 	$(RM) *.tmp
 	$(CURDIR)/test.out 6
 
-test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o Pipe.o BigQ.o RelOp.o Function.o DBFile.o HeapFile.o SortedFile.o  yyfunc.tab.o lex.yyfunc.o y.tab.o lex.yy.o test.o
+test.out: Statistics.o Record.o Comparison.o ComparisonEngine.o Schema.o File.o Pipe.o BigQ.o RelOp.o Function.o DBFile.o HeapFile.o SortedFile.o  yyfunc.tab.o lex.yyfunc.o y.tab.o lex.yy.o test.o
 	$(CXX) -o $@ $^ $(LDLIBS)
 
 test2.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o HeapFile.o SortedFile.o Pipe.o y.tab.o lex.yy.o test2.o
@@ -27,6 +27,7 @@ test2.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFil
 
 test.o: test.h Pipe.h DBFile.h Record.h Function.h BigQ.h RelOp.h
 test2.o: test2.h Pipe.h DBFile.h Record.h
+Statistics.o: Statistics.h ParseTree.h
 DBFile.o: DBFile.h Record.h Schema.h File.h Comparison.h ComparisonEngine.h Errors.h HeapFile.h SortedFile.h
 HeapFile.o: HeapFile.h DBFile.h Record.h Schema.h File.h Comparison.h ComparisonEngine.h Defs.h Errors.h
 SortedFile.o: SortedFile.h DBFile.h BigQ.h
@@ -35,7 +36,7 @@ ComparisonEngine.o: ComparisonEngine.h Comparison.h Record.h Schema.h File.h
 Pipe.o: Pipe.h Record.h
 BigQ.o: BigQ.h Pipe.h File.h Record.h
 RelOp.o: RelOp.h Pipe.h DBFile.h Record.h Function.h Pthreadutil.h Errors.h
-Function.o: Function.h Record.h ParseFunc.h
+Function.o: Function.h Record.h ParseTree.h
 File.o: File.h TwoWayList.h Record.h Schema.h Comparison.h ComparisonEngine.h
 Record.o: Record.h Defs.h ParseTree.h Schema.h File.h Comparison.h ComparisonEngine.h
 Schema.o: Schema.h Record.h File.h Comparison.h ComparisonEngine.h

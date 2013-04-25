@@ -2,7 +2,7 @@
 #define FUNCTION_H_
 
 #include "Record.h"
-#include "ParseFunc.h"
+#include "ParseTree.h"
 
 #define MAX_DEPTH 100
 
