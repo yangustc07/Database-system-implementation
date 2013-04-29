@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 
+#include "DBFile.h"
 #include "Schema.h"
 #include "Function.h"
 #include "ParseTree.h"
@@ -21,6 +22,8 @@ public:
   ~QueryPlan() {}
 
   void print(std::ostream& os = std::cout) const;
+  void setOutput(FILE* out) { outFile = out; }
+  void execute();
 
 private:
   void makeLeafs();
@@ -34,6 +37,7 @@ private:
 
   QueryNode* root;
   std::vector<QueryNode*> nodes;
+  FILE* outFile;
 
   Statistics* stat;
   AndList* used;  // reconstruct AndList so that it can be used next time
@@ -45,6 +49,7 @@ private:
   QueryPlan& operator=(const QueryPlan&);
 };
 
+class Pipe; class RelationalOp;
 class QueryNode {
   friend class QueryPlan;
   friend class UnaryNode;
@@ -70,6 +75,8 @@ protected:
   virtual void printPipe(std::ostream& os, size_t level = 0) const = 0;
   virtual void printChildren(std::ostream& os, size_t level = 0) const = 0;
 
+  virtual void execute(Pipe** pipes, RelationalOp** relops) = 0;
+
   static AndList* pushSelection(AndList*& alist, Schema* target);
   static bool containedIn(OrList* ors, Schema* target);
   static bool containedIn(ComparisonOp* cmp, Schema* target);
@@ -88,10 +95,15 @@ class LeafNode: private QueryNode {  // read from file
   friend class QueryPlan;
   LeafNode (AndList*& boolean, AndList*& pushed,
             char* relName, char* alias, Statistics* st);
+  ~LeafNode() { dbf.Close(); }
   void printOperator(std::ostream& os = std::cout, size_t level = 0) const;
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const;
   void printPipe(std::ostream& os, size_t level) const;
   void printChildren(std::ostream& os, size_t level) const {}
+
+  void execute(Pipe** pipes, RelationalOp** relops);
+
+  DBFile dbf;
   CNF selOp;
   Record literal;
 };
@@ -124,6 +136,7 @@ class ProjectNode: private UnaryNode {
   friend class QueryPlan;
   ProjectNode(NameList* atts, QueryNode* c);
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const;
+  void execute(Pipe** pipes, RelationalOp** relops);
   int keepMe[MAX_ATTS];
   int numAttsIn, numAttsOut;
 };
@@ -132,6 +145,7 @@ class DedupNode: private UnaryNode {
   friend class QueryPlan;
   DedupNode(QueryNode* c);
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const {}
+  void execute(Pipe** pipes, RelationalOp** relops);
   OrderMaker dedupOrder;
 };
 
@@ -140,6 +154,7 @@ class SumNode: private UnaryNode {
   SumNode(FuncOperator* parseTree, QueryNode* c);
   Schema* resultSchema(FuncOperator* parseTree, QueryNode* c);
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const;
+  void execute(Pipe** pipes, RelationalOp** relops);
   Function f;
 };
 
@@ -148,6 +163,7 @@ class GroupByNode: private UnaryNode {
   GroupByNode(NameList* gAtts, FuncOperator* parseTree, QueryNode* c);
   Schema* resultSchema(NameList* gAtts, FuncOperator* parseTree, QueryNode* c);
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const;
+  void execute(Pipe** pipes, RelationalOp** relops);
   OrderMaker grpOrder;
   Function f;
 };
@@ -156,15 +172,17 @@ class JoinNode: private BinaryNode {
   friend class QueryPlan;
   JoinNode(AndList*& boolean, AndList*& pushed, QueryNode* l, QueryNode* r, Statistics* st);
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const;
+  void execute(Pipe** pipes, RelationalOp** relops);
   CNF selOp;
   Record literal;
 };
 
 class WriteNode: private UnaryNode {
   friend class QueryPlan;
-  WriteNode(FILE* out, QueryNode* c);
+  WriteNode(FILE*& out, QueryNode* c);
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const;
-  FILE* outFile;
+  void execute(Pipe** pipes, RelationalOp** relops);
+  FILE*& outFile;
 };
 
 #endif

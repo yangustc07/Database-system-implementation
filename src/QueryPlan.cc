@@ -7,8 +7,10 @@
 #include "Errors.h"
 #include "Stl.h"
 #include "QueryPlan.h"
+#include "Pipe.h"
+#include "RelOp.h"
 
-//#define _OUTPUT_SCHEMA__
+#define _OUTPUT_SCHEMA__
 
 #define popVector(vel, el1, el2)                \
   QueryNode* el1 = vel.back();                  \
@@ -31,6 +33,8 @@
 #define indent(level) (string(3*(level), ' ') + "-> ")
 #define annot(level) (string(3*(level+1), ' ') + "* ")
 
+#define PIPE_SIZE 256
+
 using std::endl;
 using std::string;
 
@@ -47,7 +51,11 @@ extern NameList* attsToSelect;
 extern int distinctAtts;
 extern int distinctFunc;
 
-QueryPlan::QueryPlan(Statistics* st): stat(st), used(NULL) {
+
+/**********************************************************************
+ * API                                                                *
+ **********************************************************************/
+QueryPlan::QueryPlan(Statistics* st): root(NULL), outFile(stdout), stat(st), used(NULL) {
   makeLeafs();  // these nodes read from file
   makeJoins();
   makeSums();
@@ -58,13 +66,30 @@ QueryPlan::QueryPlan(Statistics* st): stat(st), used(NULL) {
   // clean up
   swap(boolean, used);
   FATALIF(used, "WHERE clause syntax error.");
-  print();
 }
 
 void QueryPlan::print(std::ostream& os) const {
   root->print(os);
 }
 
+void QueryPlan::execute() {
+  int numNodes = root->pipeId;
+  Pipe** pipes = new Pipe*[numNodes];
+  RelationalOp** relops = new RelationalOp*[numNodes];
+  root->execute(pipes, relops);
+
+  for (int i=0; i<numNodes; ++i)
+    relops[i] -> WaitUntilDone();
+  for (int i=0; i<numNodes; ++i) {
+    delete pipes[i]; delete relops[i];
+  }
+  delete[] pipes; delete[] relops;
+}
+
+
+/**********************************************************************
+ * Query optimization                                                 *
+ **********************************************************************/
 void QueryPlan::makeLeafs() {
   for (TableList* table = tables; table; table = table->next) {
     stat->CopyRel(table->tableName, table->aliasAs);
@@ -103,7 +128,7 @@ void QueryPlan::makeDistinct() {
 }
 
 void QueryPlan::makeWrite() {
-  root = new WriteNode(stdout, root);
+  root = new WriteNode(outFile, root);
 }
 
 void QueryPlan::orderJoins() {
@@ -141,6 +166,9 @@ void QueryPlan::concatList(AndList*& left, AndList*& right) {
   right = NULL;
 }
 
+/**********************************************************************
+ * Node construction                                                  *
+ **********************************************************************/
 int QueryNode::pipeId = 0;
 
 QueryNode::QueryNode(const std::string& op, Schema* out, Statistics* st):
@@ -160,7 +188,7 @@ QueryNode::QueryNode(const std::string& op, Schema* out, char* rNames[], size_t 
 QueryNode::~QueryNode() {
   delete outSchema;
   for (size_t i=0; i<numRels; ++i)
-    delete relNames[i];
+    delete[] relNames[i];
 }
 
 AndList* QueryNode::pushSelection(AndList*& alist, Schema* target) {
@@ -229,7 +257,7 @@ JoinNode::JoinNode(AndList*& boolean, AndList*& pushed, QueryNode* l, QueryNode*
   pushed = pushSelection(boolean, outSchema);
   estimate = stat->ApplyEstimate(pushed, relNames, numRels);
   cost = l->cost + estimate + r->cost;
-  selOp.GrowFromParseTree(pushed, outSchema, literal);
+  selOp.GrowFromParseTree(pushed, l->outSchema, r->outSchema, literal);
 }
 
 SumNode::SumNode(FuncOperator* parseTree, QueryNode* c):
@@ -266,9 +294,73 @@ Schema* GroupByNode::resultSchema(NameList* gAtts, FuncOperator* parseTree, Quer
   return new Schema ("", numAtts, resultAtts);
 }
 
-WriteNode::WriteNode(FILE* out, QueryNode* c):
+WriteNode::WriteNode(FILE*& out, QueryNode* c):
   UnaryNode("WriteOut", c->outSchema, c, NULL), outFile(out) {}
 
+
+/**********************************************************************
+ * Query execution                                                    *
+ **********************************************************************/
+void LeafNode::execute(Pipe** pipes, RelationalOp** relops) {
+  std::string dbName = std::string(relNames[0]) + ".bin";
+  dbf.Open((char*)dbName.c_str());
+  SelectFile* sf = new SelectFile();
+  pipes[pout] = new Pipe(PIPE_SIZE);
+  relops[pout] = sf;
+  sf -> Run(dbf, *pipes[pout], selOp, literal);
+}
+
+void ProjectNode::execute(Pipe** pipes, RelationalOp** relops) {
+  child -> execute(pipes, relops);
+  Project* p = new Project();
+  pipes[pout] = new Pipe(PIPE_SIZE);
+  relops[pout] = p;
+  p -> Run(*pipes[pin], *pipes[pout], keepMe, numAttsIn, numAttsOut);
+}
+
+void DedupNode::execute(Pipe** pipes, RelationalOp** relops) {
+  child -> execute(pipes, relops);
+  DuplicateRemoval* dedup = new DuplicateRemoval();
+  pipes[pout] = new Pipe(PIPE_SIZE);
+  relops[pout] = dedup;
+  dedup -> Run(*pipes[pin], *pipes[pout], *outSchema);
+}
+
+void SumNode::execute(Pipe** pipes, RelationalOp** relops) {
+  child -> execute(pipes, relops);
+  Sum* s = new Sum();
+  pipes[pout] = new Pipe(PIPE_SIZE);
+  relops[pout] = s;
+  s -> Run(*pipes[pin], *pipes[pout], f);
+}
+
+void GroupByNode::execute(Pipe** pipes, RelationalOp** relops) {
+  child -> execute(pipes, relops);
+  GroupBy* grp = new GroupBy();
+  pipes[pout] = new Pipe(PIPE_SIZE);
+  relops[pout] = grp;
+  grp -> Run(*pipes[pin], *pipes[pout], grpOrder, f);
+}
+
+void JoinNode::execute(Pipe** pipes, RelationalOp** relops) {
+  left -> execute(pipes, relops); right -> execute(pipes, relops);
+  Join* j = new Join();
+  pipes[pout] = new Pipe(PIPE_SIZE);
+  relops[pout] = j;
+  j -> Run(*pipes[pleft], *pipes[pright], *pipes[pout], selOp, literal);
+}
+
+void WriteNode::execute(Pipe** pipes, RelationalOp** relops) {
+  child -> execute(pipes, relops);
+  WriteOut* w = new WriteOut();
+  pipes[pout] = new Pipe(PIPE_SIZE);
+  relops[pout] = w;
+  w -> Run(*pipes[pin], outFile, *outSchema);
+}
+
+/**********************************************************************
+ * Print utilities                                                    *
+ **********************************************************************/
 void QueryNode::print(std::ostream& os, size_t level) const {
   printOperator(os, level);
   printAnnot(os, level);
@@ -314,6 +406,7 @@ void ProjectNode::printAnnot(std::ostream& os, size_t level) const {
   os << keepMe[0];
   for (size_t i=1; i<numAttsOut; ++i) os << ',' << keepMe[i];
   os << endl;
+  os << annot(level) << numAttsIn << " input attributes; " << numAttsOut << " output attributes" << endl;
 }
 
 void JoinNode::printAnnot(std::ostream& os, size_t level) const {

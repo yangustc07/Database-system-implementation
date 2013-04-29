@@ -200,7 +200,8 @@ void WriteOut::Run (Pipe &inPipe, FILE *outFile, Schema &mySchema) {
 
 void* WriteOut::work(void* param) {
   UNPACK_ARGS3(Args, param, in, out, myschema);
-  FOREACH_INPIPE(rec, in) rec.Write(out, myschema);
+  FOREACH_INPIPE(rec, in)
+    rec.Write(out, myschema);
 }
 
 void RelationalOp::WaitUntilDone() {

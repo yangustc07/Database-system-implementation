@@ -33,5 +33,8 @@ int main (int argc, char* argv[]) {
   s.Read(fileName);
 
   QueryPlan plan(&s);
+  plan.print();
+  plan.setOutput(stdout);
+  plan.execute();
   return 0;
 }
