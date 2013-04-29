@@ -1,4 +1,7 @@
 #include "Statistics.h"
+#include "Errors.h"
+#include <climits>
+
 #include <stdio.h>
 #include <cstring>
 #include <iostream>
@@ -19,10 +22,26 @@ Statistics::Statistics(Statistics &copyMe){
 			relinfo.attrs.insert(pair<string, int>(str2, n));
 		}
 		mymap.insert(pair<string, relInfo>(str1, relinfo));
+		relinfo.attrs.clear();
 	}
 }
 
 Statistics::~Statistics(){}
+
+char* Statistics::SearchAttr(char * attrName){
+	map<string, int>::iterator it;
+	string attrStr(attrName);
+	string rel;
+	char * relName = new char[200];
+	for (map<string, relInfo>::iterator it1 = mymap.begin(); it1 != mymap.end(); ++it1){
+		it = it1->second.attrs.find(attrStr);
+		if (it != it1->second.attrs.end()){
+			rel = it1->first;
+			break;
+		}
+	}
+	return (char*)rel.c_str();
+}
 
 void Statistics::AddRel(char *relName, int numTuples){
 	relInfo newRel;
@@ -59,12 +78,12 @@ void Statistics::CopyRel(char *oldName, char *newName){
 	
 void Statistics::Read(char *fromWhere){
 	FILE* statfile;
-	statfile = fopen("Statistics.txt", "r");
+	statfile = fopen(fromWhere, "r");
 	if (statfile == NULL){
-		statfile = fopen("Statistics.txt", "w");
+		statfile = fopen(fromWhere, "w");
 		fprintf(statfile, "end\n");
 		fclose(statfile);
-		statfile = fopen("Statistics.txt", "r");
+		statfile = fopen(fromWhere, "r");
 	}
 	char fstr[200], relchar[200];
 	int n;
@@ -96,7 +115,8 @@ void Statistics::Read(char *fromWhere){
 
 void Statistics::Write(char *fromWhere){
 	FILE* statfile;
-	statfile = fopen("Statistics.txt", "w");
+	//statfile = fopen("Statistics.txt", "w");
+	statfile = fopen(fromWhere, "w");
 	for (map<string,relInfo>::iterator it1 = mymap.begin(); it1!=mymap.end(); ++it1){
 		char * write = new char[it1->first.length()+1];
 		strcpy(write, it1->first.c_str());
@@ -119,7 +139,7 @@ void  Statistics::Apply(struct AndList *parseTree, char *relNames[], int numToJo
 		if (andlist->left != NULL){
 			orlist = andlist->left;
 			while(orlist != NULL){
-				if (orlist->left->left->code == 4 && orlist->left->right->code == 4){
+				if (orlist->left->left->code == 3 && orlist->left->right->code == 3){//
 					map<string, int>::iterator itAtt[2];
 					map<string, relInfo>::iterator itRel[2];
 					string joinAtt1(orlist->left->left->value);
@@ -200,14 +220,20 @@ double Statistics::Estimate(struct AndList *parseTree, char **relNames, int numT
 	struct AndList * andlist = parseTree;
 	struct OrList * orlist;
 	double result = 0.0, fraction = 1.0;
-	int state = 0;//
+	int state = 0;
+        if (andlist == NULL) {
+          if (numToJoin>1) return -1;
+          FATALIF (mymap.find(relNames[0]) == mymap.end(),
+                   (std::string("Relation ")+relNames[0]+" does not exist").c_str());
+          return mymap[relNames[0]].numTuples;
+        }
 	while (andlist != NULL){
 		if (andlist->left != NULL){
 			orlist = andlist->left;
 			double fractionOr = 0.0;
 			map<string, int>::iterator lastAtt;
 			while(orlist != NULL){
-				if (orlist->left->left->code == 4 && orlist->left->right->code == 4){
+				if (orlist->left->left->code == 3 && orlist->left->right->code == 3){
 					map<string, int>::iterator itAtt[2];
 					map<string, relInfo>::iterator itRel[2];
 					string joinAtt1(orlist->left->left->value);
@@ -254,7 +280,7 @@ double Statistics::Estimate(struct AndList *parseTree, char **relNames, int numT
 					if (result == 0.0)
 						result = ((double)itRel->second.numTuples);
 					double tempFrac;
-					if(orlist->left->code == 3)
+					if(orlist->left->code == 7)
 						tempFrac = 1.0 / itAtt->second;
 					else
 						tempFrac = 1.0 / 3.0;

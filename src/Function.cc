@@ -2,6 +2,9 @@
 #include "Function.h"
 #include <iostream>
 #include <stdlib.h>
+
+#include "Errors.h"
+
 Function :: Function () {
 
 	opList = new Arithmatic[MAX_DEPTH];
@@ -197,11 +200,17 @@ void Function :: GrowFromParseTree (struct FuncOperator *parseTree, Schema &mySc
 		returnsInt = 1;
 	else
 		returnsInt = 0;
-
 }
 
 void Function :: Print () {
-
+  const char* opNames[14] = {
+    "PushInt", "PushDouble", "ToDouble", "ToDouble2Down", 
+    "IntUnaryMinus", "IntMinus", "IntPlus", "IntDivide", "IntMultiply",
+    "DblUnaryMinus", "DblMinus", "DblPlus", "DblDivide", "DblMultiply"
+  };
+  FATALIF(!opList, "Uninitialized function.");
+  for (int i=0; i<numOps; ++i)
+    std::cout << opList[i].recInput << " " << opNames[opList[i].myOp] << std::endl;
 }
 
 Type Function :: Apply (Record &toMe, int &intResult, double &doubleResult) {
