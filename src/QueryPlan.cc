@@ -84,6 +84,7 @@ void QueryPlan::execute() {
     delete pipes[i]; delete relops[i];
   }
   delete[] pipes; delete[] relops;
+  root->pipeId = 0;
 }
 
 
