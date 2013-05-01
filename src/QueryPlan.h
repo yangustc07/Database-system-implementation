@@ -2,6 +2,7 @@
 #define QUERY_PLAN_H_
 
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include "DBFile.h"
@@ -23,7 +24,7 @@ public:
 
   void plan();
   void print(std::ostream& os = std::cout) const;
-  void setOutput(FILE* out) { outFile = out; }
+  void setOutput(char* out);
   void execute();
 
 private:
@@ -38,6 +39,7 @@ private:
 
   QueryNode* root;
   std::vector<QueryNode*> nodes;
+  std::string outName;
   FILE* outFile;
 
   Statistics* stat;
@@ -96,7 +98,7 @@ class LeafNode: private QueryNode {  // read from file
   friend class QueryPlan;
   LeafNode (AndList*& boolean, AndList*& pushed,
             char* relName, char* alias, Statistics* st);
-  ~LeafNode() { dbf.Close(); }
+  ~LeafNode() { if (opened) dbf.Close(); }
   void printOperator(std::ostream& os = std::cout, size_t level = 0) const;
   void printAnnot(std::ostream& os = std::cout, size_t level = 0) const;
   void printPipe(std::ostream& os, size_t level) const;
@@ -105,6 +107,7 @@ class LeafNode: private QueryNode {  // read from file
   void execute(Pipe** pipes, RelationalOp** relops);
 
   DBFile dbf;
+  bool opened;
   CNF selOp;
   Record literal;
 };
@@ -187,3 +190,4 @@ class WriteNode: private UnaryNode {
 };
 
 #endif
+

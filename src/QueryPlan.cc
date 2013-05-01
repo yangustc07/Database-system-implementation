@@ -55,7 +55,7 @@ extern int distinctFunc;
 /**********************************************************************
  * API                                                                *
  **********************************************************************/
-QueryPlan::QueryPlan(Statistics* st): root(NULL), outFile(stdout), stat(st), used(NULL) {}
+QueryPlan::QueryPlan(Statistics* st): root(NULL), outName("STDOUT"), stat(st), used(NULL) {}
 
 void QueryPlan::plan() {
   makeLeafs();  // these nodes read from file
@@ -74,18 +74,27 @@ void QueryPlan::print(std::ostream& os) const {
   root->print(os);
 }
 
-void QueryPlan::execute() {
-  int numNodes = root->pipeId;
-  Pipe** pipes = new Pipe*[numNodes];
-  RelationalOp** relops = new RelationalOp*[numNodes];
-  root->execute(pipes, relops);
+void QueryPlan::setOutput(char* out) {
+  outName = out;
+}
 
-  for (int i=0; i<numNodes; ++i)
-    relops[i] -> WaitUntilDone();
-  for (int i=0; i<numNodes; ++i) {
-    delete pipes[i]; delete relops[i];
+void QueryPlan::execute() {
+  outFile = (outName == "STDOUT" ? stdout
+    : outName == "NONE" ? NULL
+    : fopen(outName.c_str(), "w"));   // closed by query executor
+  if (outFile) {
+    int numNodes = root->pipeId;
+    Pipe** pipes = new Pipe*[numNodes];
+    RelationalOp** relops = new RelationalOp*[numNodes];
+    root->execute(pipes, relops);
+    for (int i=0; i<numNodes; ++i)
+      relops[i] -> WaitUntilDone();
+    for (int i=0; i<numNodes; ++i) {
+      delete pipes[i]; delete relops[i];
+    }
+    delete[] pipes; delete[] relops;
+    if (outFile!=stdout) fclose(outFile);
   }
-  delete[] pipes; delete[] relops;
   root->pipeId = 0;
   delete root; root = NULL;
   nodes.clear();
@@ -223,7 +232,7 @@ bool QueryNode::containedIn(ComparisonOp* cmp, Schema* target) {
 }
 
 LeafNode::LeafNode(AndList*& boolean, AndList*& pushed, char* relName, char* alias, Statistics* st):
-  QueryNode("Select File", new Schema(catalog_path, relName, alias), relName, st) {
+  QueryNode("Select File", new Schema(catalog_path, relName, alias), relName, st), opened(false) {
   pushed = pushSelection(boolean, outSchema);
   estimate = stat->ApplyEstimate(pushed, relNames, numRels);
   selOp.GrowFromParseTree(pushed, outSchema, literal);
@@ -308,7 +317,7 @@ WriteNode::WriteNode(FILE*& out, QueryNode* c):
  **********************************************************************/
 void LeafNode::execute(Pipe** pipes, RelationalOp** relops) {
   std::string dbName = std::string(relNames[0]) + ".bin";
-  dbf.Open((char*)dbName.c_str());
+  dbf.Open((char*)dbName.c_str()); opened = true;
   SelectFile* sf = new SelectFile();
   pipes[pout] = new Pipe(PIPE_SIZE);
   relops[pout] = sf;
@@ -431,3 +440,4 @@ void GroupByNode::printAnnot(std::ostream& os, size_t level) const {
 void WriteNode::printAnnot(std::ostream& os, size_t level) const {
   os << annot(level) << "Output to " << outFile << endl;
 }
+
