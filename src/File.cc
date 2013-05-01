@@ -164,7 +164,10 @@ void File :: GetPage (Page *putItHere, off_t whichPage) {
 	// this is because the first page has no data
 	whichPage++;
 
-	if (whichPage >= curLength) {
+        if (curLength <= 0) { // return an empty page
+          putItHere -> EmptyItOut();
+          return;
+        } else if (whichPage >= curLength) {
 		cerr << "whichPage " << whichPage << " length " << curLength << endl;
 		cerr << "BAD: you tried to read past the end of the file\n";
 		exit (1);
@@ -229,10 +232,6 @@ void File :: Open (int fileLen, char *fName) {
 
 	// actually do the open
         myFilDes = open (fName, mode, S_IRUSR | S_IWUSR);
-
-#ifdef DEBUG
-	cout << "Opening file " << fName << " with "<< curLength << " pages.\n";
-#endif
 
 	// see if there was an error
 	if (myFilDes < 0) {

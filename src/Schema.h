@@ -46,6 +46,9 @@ public:
 	// this finds the type of the given attribute
 	Type FindType (char *attName);
 
+        // deep copy
+        Schema (const Schema& sch);
+
 	// this reads the specification for the schema in from a file
         Schema (char *fName, char *relName, const char* alias = "");
 

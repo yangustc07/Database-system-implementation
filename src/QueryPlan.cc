@@ -55,7 +55,9 @@ extern int distinctFunc;
 /**********************************************************************
  * API                                                                *
  **********************************************************************/
-QueryPlan::QueryPlan(Statistics* st): root(NULL), outFile(stdout), stat(st), used(NULL) {
+QueryPlan::QueryPlan(Statistics* st): root(NULL), outFile(stdout), stat(st), used(NULL) {}
+
+void QueryPlan::plan() {
   makeLeafs();  // these nodes read from file
   makeJoins();
   makeSums();
@@ -85,6 +87,8 @@ void QueryPlan::execute() {
   }
   delete[] pipes; delete[] relops;
   root->pipeId = 0;
+  delete root; root = NULL;
+  nodes.clear();
 }
 
 
@@ -251,7 +255,7 @@ ProjectNode::ProjectNode(NameList* atts, QueryNode* c):
 }
 
 DedupNode::DedupNode(QueryNode* c):
-  UnaryNode("Deduplication", c->outSchema, c, NULL), dedupOrder(c->outSchema) {}
+  UnaryNode("Deduplication", new Schema(*c->outSchema), c, NULL), dedupOrder(c->outSchema) {}
 
 JoinNode::JoinNode(AndList*& boolean, AndList*& pushed, QueryNode* l, QueryNode* r, Statistics* st):
   BinaryNode("Join", l, r, st) {
@@ -296,7 +300,7 @@ Schema* GroupByNode::resultSchema(NameList* gAtts, FuncOperator* parseTree, Quer
 }
 
 WriteNode::WriteNode(FILE*& out, QueryNode* c):
-  UnaryNode("WriteOut", c->outSchema, c, NULL), outFile(out) {}
+  UnaryNode("WriteOut", new Schema(*c->outSchema), c, NULL), outFile(out) {}
 
 
 /**********************************************************************

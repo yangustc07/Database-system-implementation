@@ -20,28 +20,26 @@ int SortedFile::Create (char* fpath, void* startup) {
   table = getTableName((tpath=fpath).c_str());
   typedef struct { OrderMaker* o; int l; } *pOrder;
   pOrder po = (pOrder)startup;
-  myOrder = po -> o;
+  myOrder = *(po -> o);
   runLength = po -> l;
   return DBFileBase::Create(fpath, startup);
 }
 
 int SortedFile::Open (char* fpath) {
-  allocMem();
   table = getTableName((tpath=fpath).c_str());
   int ftype;
   ifstream ifs(metafName());
   FATALIF(!ifs, "Meta file missing.");
-  ifs >> ftype >> *myOrder >> runLength;
+  ifs >> ftype >> myOrder >> runLength;
   ifs.close();
   return DBFileBase::Open(fpath);
 }
 
 int SortedFile::Close() {
   ofstream ofs(metafName());  // write meta data
-  ofs << "1\n" << *myOrder << '\n' << runLength << std::endl;
+  ofs << "1\n" << myOrder << '\n' << runLength << std::endl;
   ofs.close();
   if(mode==WRITE) merge();  // write actual data
-  freeMem();
   return theFile.Close();
 }
 
@@ -69,7 +67,7 @@ int SortedFile::GetNext (Record& fetchme) {
 int SortedFile::GetNext (Record& fetchme, CNF& cnf, Record& literal) {
   // startRead();
   OrderMaker queryorder, cnforder;
-  OrderMaker::queryOrderMaker(*myOrder, cnf, queryorder, cnforder);
+  OrderMaker::queryOrderMaker(myOrder, cnf, queryorder, cnforder);
   ComparisonEngine cmp;
   if (!binarySearch(fetchme, queryorder, literal, cnforder, cmp)) return 0; // query part should equal
   do {
@@ -96,11 +94,11 @@ void SortedFile::merge() {
 
   // two-way merge
   while (fileNotEmpty || pipeNotEmpty)
-    if (!fileNotEmpty || (pipeNotEmpty && ce.Compare(&fromFile, &fromPipe, myOrder) > 0)) {
+    if (!fileNotEmpty || (pipeNotEmpty && ce.Compare(&fromFile, &fromPipe, &myOrder) > 0)) {
       tmp.Add(fromPipe);
       pipeNotEmpty = out->Remove(&fromPipe);
     } else if (!pipeNotEmpty
-               || (fileNotEmpty && ce.Compare(&fromFile, &fromPipe, myOrder) <= 0)) {
+               || (fileNotEmpty && ce.Compare(&fromFile, &fromPipe, &myOrder) <= 0)) {
       tmp.Add(fromFile);
       fileNotEmpty = GetNext(fromFile);
     } else FATAL("Two-way merge failed.");
@@ -141,15 +139,4 @@ int SortedFile::binarySearch(Record& fetchme, OrderMaker& queryorder, Record& li
 const char* SortedFile::metafName() const {
   std::string p(dbfile_dir);
   return (p+table+".meta").c_str();
-}
-
-void SortedFile::allocMem() {
-  FATALIF (myOrder != NULL, "File already open.");
-  myOrder = new OrderMaker();
-  useMem = true;
-}
-
-void SortedFile::freeMem() {
-  if (useMem) safeDelete(myOrder);
-  useMem = false;
 }

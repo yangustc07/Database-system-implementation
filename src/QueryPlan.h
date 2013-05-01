@@ -19,8 +19,9 @@ class QueryNode;
 class QueryPlan {
 public:
   QueryPlan(Statistics* st);
-  ~QueryPlan() {}
+  ~QueryPlan() { if (root) delete root; }
 
+  void plan();
   void print(std::ostream& os = std::cout) const;
   void setOutput(FILE* out) { outFile = out; }
   void execute();

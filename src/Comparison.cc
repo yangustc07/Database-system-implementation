@@ -64,7 +64,20 @@ void Comparison :: Print () const {
 		cout << "(String)";
 }
 
+OrderMaker::OrderMaker(const OrderMaker& order): numAtts(order.numAtts) {
+  for (size_t i = 0; i < numAtts; ++i) {
+    whichAtts[i] = order.whichAtts[i];
+    whichTypes[i] = order.whichTypes[i];
+  }
+}
 
+OrderMaker& OrderMaker::operator= (const OrderMaker& order) {
+  numAtts = order.numAtts;
+  for (size_t i = 0; i < numAtts; ++i) {
+    whichAtts[i] = order.whichAtts[i];
+    whichTypes[i] = order.whichTypes[i];
+  }
+}
 
 
 OrderMaker :: OrderMaker(Schema *schema) {

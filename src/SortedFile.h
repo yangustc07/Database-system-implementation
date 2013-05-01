@@ -14,8 +14,8 @@ class SortedFile: protected DBFileBase {
   using DBFileBase::GetNext;
 
 protected:
-  SortedFile(): myOrder(NULL), runLength(0),
-                in(NULL), out(NULL), biq(NULL), useMem(false) {}
+  SortedFile(): runLength(0),
+                in(NULL), out(NULL), biq(NULL) {}
   ~SortedFile() {}
 
   int Create (char* fpath, void* startup);
@@ -34,7 +34,7 @@ protected:
   void startRead();
 
 private:
-  OrderMaker* myOrder;    // may come from startup or meta file; need to differentiate
+  OrderMaker myOrder;
   int runLength;
 
   std::string tpath;
@@ -49,14 +49,9 @@ private:
   void merge();    // merge BigQ and File
   int binarySearch(Record& fetchme, OrderMaker& queryorder, Record& literal, OrderMaker& cnforder, ComparisonEngine& cmp);
 
-  bool useMem;     // this is used to indicate whether SortInfo is passed or created
-                   // is is default to false, and set in allocMem()
-  void allocMem();
-  void freeMem();
-
   void createQ() {
     in = new Pipe(PIPE_BUFFER_SIZE), out = new Pipe(PIPE_BUFFER_SIZE);
-    biq = new BigQ(*in, *out, *myOrder, runLength);
+    biq = new BigQ(*in, *out, myOrder, runLength);
   }
 
   void deleteQ() {
