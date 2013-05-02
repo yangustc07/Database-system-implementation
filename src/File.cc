@@ -152,11 +152,8 @@ void Page :: FromBinary (char *bits) {
 	delete temp;
 }
 
-File :: File () {
-}
-
-File :: ~File () {
-}
+File :: File (): curLength(0) {}
+File :: ~File () {}
 
 
 void File :: GetPage (Page *putItHere, off_t whichPage) {

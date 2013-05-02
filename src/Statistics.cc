@@ -77,6 +77,7 @@ void Statistics::CopyRel(char *oldName, char *newName){
 }
 	
 void Statistics::Read(char *fromWhere){
+  mymap.clear(); tempRes = 0.0;
 	FILE* statfile;
 	statfile = fopen(fromWhere, "r");
 	if (statfile == NULL){

@@ -10,7 +10,7 @@
 #include "Pipe.h"
 #include "RelOp.h"
 
-#define _OUTPUT_SCHEMA__
+// #define _OUTPUT_SCHEMA__
 
 #define popVector(vel, el1, el2)                \
   QueryNode* el1 = vel.back();                  \
@@ -32,8 +32,6 @@
 
 #define indent(level) (string(3*(level), ' ') + "-> ")
 #define annot(level) (string(3*(level+1), ' ') + "* ")
-
-#define PIPE_SIZE 256
 
 using std::endl;
 using std::string;

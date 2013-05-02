@@ -33,7 +33,7 @@ public:
 	// the deletes the first record from a page and returns it; returns
 	// a zero if there were no records on the page
 	int GetFirst (Record *firstOne);
-
+  int GetNumRecs() const { return numRecs; }
 	// this appends the record to the end of a page.  The return value
 	// is a one on success and a zero if there is no more space
 	// note that the record is consumed so it will have no value after

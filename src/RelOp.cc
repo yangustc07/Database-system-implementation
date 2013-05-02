@@ -219,10 +219,10 @@ int RelationalOp::create_joinable_thread(pthread_t *thread,
 }
 
 JoinBuffer::JoinBuffer(size_t npages): size(0), capacity(PAGE_SIZE*npages), nrecords(0) {
-  buffer = (Record*)malloc(PAGE_SIZE*npages);
+  buffer = new Record[PAGE_SIZE*npages/sizeof(Record*)];
 }
 
-JoinBuffer::~JoinBuffer() { free(buffer); }
+JoinBuffer::~JoinBuffer() { delete[] buffer; }
 
 bool JoinBuffer::add (Record& addme) {
   if((size+=addme.getLength())>capacity) return 0;
