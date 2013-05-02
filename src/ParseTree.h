@@ -1,9 +1,11 @@
-#ifndef PARSE_FUNC_H_
-#define PARSE_FUNC_H_
+
+#ifndef ParseFunc
+#define ParseFunc
 
 // these are the types of operands that can appear in a CNF expression
 #define DOUBLE 1
 #define INT 2
+#define INTEGER 2
 #define NAME 3
 #define STRING 4
 #define LESS_THAN 5
@@ -29,7 +31,6 @@ struct FuncOperator {
 	struct FuncOperator *leftOperator;
 	struct FuncOperand *leftOperand;
 	struct FuncOperator *right;	
-
 };
 
 struct TableList {
@@ -93,7 +94,12 @@ struct AndList {
         // this is the AndList to the right of the AND
         // note that this can be NULL if the right is a disjunction
         struct AndList *rightAnd;
+};
 
+struct AttrList{
+	char *name;
+	int type;
+	struct AttrList *next;
 };
 
 #endif
