@@ -200,7 +200,8 @@ void WriteOut::Run (Pipe &inPipe, FILE *outFile, Schema &mySchema) {
 
 void* WriteOut::work(void* param) {
   UNPACK_ARGS3(Args, param, in, out, myschema);
-  FOREACH_INPIPE(rec, in) rec.Write(out, myschema);
+  FOREACH_INPIPE(rec, in)
+    rec.Write(out, myschema);
 }
 
 void RelationalOp::WaitUntilDone() {
@@ -218,10 +219,10 @@ int RelationalOp::create_joinable_thread(pthread_t *thread,
 }
 
 JoinBuffer::JoinBuffer(size_t npages): size(0), capacity(PAGE_SIZE*npages), nrecords(0) {
-  buffer = (Record*)malloc(PAGE_SIZE*npages);
+  buffer = new Record[PAGE_SIZE*npages/sizeof(Record*)];
 }
 
-JoinBuffer::~JoinBuffer() { free(buffer); }
+JoinBuffer::~JoinBuffer() { delete[] buffer; }
 
 bool JoinBuffer::add (Record& addme) {
   if((size+=addme.getLength())>capacity) return 0;

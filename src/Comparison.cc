@@ -4,7 +4,9 @@
 #include <string.h>
 
 #include "Comparison.h"
+#include "ParseTree.h"
 #include "Defs.h"
+#include "Errors.h"
 
 Comparison::Comparison()
 {
@@ -62,12 +64,21 @@ void Comparison :: Print () const {
 		cout << "(String)";
 }
 
-
-
-
-OrderMaker :: OrderMaker() {
-	numAtts = 0;
+OrderMaker::OrderMaker(const OrderMaker& order): numAtts(order.numAtts) {
+  for (size_t i = 0; i < numAtts; ++i) {
+    whichAtts[i] = order.whichAtts[i];
+    whichTypes[i] = order.whichTypes[i];
+  }
 }
+
+OrderMaker& OrderMaker::operator= (const OrderMaker& order) {
+  numAtts = order.numAtts;
+  for (size_t i = 0; i < numAtts; ++i) {
+    whichAtts[i] = order.whichAtts[i];
+    whichTypes[i] = order.whichTypes[i];
+  }
+}
+
 
 OrderMaker :: OrderMaker(Schema *schema) {
 	numAtts = 0;
@@ -133,6 +144,14 @@ int OrderMaker::findAttrIn(int att, const CNF& query) {
     }
   END_FOREACH
   return -1;
+}
+
+void OrderMaker::growFromParseTree(NameList* gAtts, Schema* inputSchema) {
+  for(; gAtts; gAtts = gAtts->next, numAtts++) {
+    FATALIF ((whichAtts[numAtts] = inputSchema->Find(gAtts->name))==-1,
+             "Grouping by non-existing attribute.");
+    whichTypes[numAtts] = inputSchema->FindType(gAtts->name);
+  }
 }
 
 void OrderMaker :: Print () const {
@@ -228,6 +247,9 @@ int CNF :: GetSortOrders (OrderMaker &left, OrderMaker &right) {
 
 
 void CNF :: Print () const {
+
+  if (numAnds == 0)
+    cout << "<empty>" << endl;
 
 	for (int i = 0; i < numAnds; i++) {
 		

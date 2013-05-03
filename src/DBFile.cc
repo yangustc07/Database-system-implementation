@@ -6,18 +6,20 @@
 #include "SortedFile.h"
 
 using std::string;
+using std::ifstream;
 using std::ofstream;
 
 int DBFile::Create (char* fpath, fType ftype, void* startup) {
-  FATALIF(db!=NULL, "File already opened.");
+  FATALIF(db, "File already opened.");
   createFile(ftype);
   return db->Create(fpath, startup);
 }
 
 int DBFile::Open (char* fpath) {
-  FATALIF(db!=NULL, "File already opened.");
+  FATALIF(db, "File already opened.");
   int ftype = HEAP;  // use heap file by default
-  ifstream ifs((DBFileBase::getTableName(fpath)+".meta").c_str());
+  string metaFile = DBFileBase::getTableName(fpath)+".meta";
+  ifstream ifs(metaFile.c_str());
   if (ifs) {
     ifs >> ftype;  // the first line contains file type
     ifs.close();

@@ -508,7 +508,7 @@ void Record::Write(FILE* file, Schema* mySchema) {
     // then is a character string
     } else if (atts[i].myType == String) {
       char *myString = (char *) &(bits[pointer]);
-      //fprintf(file, "%s", myString);
+      fprintf(file, "%s", myString);
     } 
 
     //fprintf(file, "]");

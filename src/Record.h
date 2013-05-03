@@ -40,7 +40,7 @@ private:
 	void SetBits (char *bits);
 	void CopyBits(char *bits, int b_len);
 
-        void alloc(size_t len) { bits = new char(len); setLength(len); }
+        void alloc(size_t len) { if (bits) {delete[] bits;} bits = new char[len]; setLength(len); }
         void setLength(int len) { ((int*)bits)[0] = len; }
         int getPointer(size_t n) const { return ((int*)bits)[n+1]; }
         void setPointer(size_t n, int offset) { ((int*)bits)[n+1] = offset; }
@@ -120,10 +120,10 @@ void Record::prepend(const T& value) {
   newRec.setValue(0, value);
   for (int i=0; i<numA; ++i)        // move old pointers
     newRec.setPointer(i+1, getPointer(i)+growth);  // this has problems????
-   memcpy((void*)(newRec.bits+(getPointer(0)+growth)),    // move old values
+  memcpy((void*)(newRec.bits+(getPointer(0)+growth)),    // move old values
          (void*)(bits+getPointer(0)),
          getLength()-getPointer(0));
-   Consume(&newRec);
+  Consume(&newRec);
 }
 
 #endif

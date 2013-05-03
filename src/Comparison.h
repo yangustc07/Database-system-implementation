@@ -54,8 +54,10 @@ class OrderMaker {
 public:
 	
 	// creates an empty OrdermMaker
-	OrderMaker();
+        OrderMaker(): numAtts(0) {}
 
+        OrderMaker(const OrderMaker& order);
+        OrderMaker& operator= (const OrderMaker& order);
 	// create an OrderMaker that can be used to sort records
 	// based upon ALL of their attributes
 	OrderMaker(Schema *schema);
@@ -69,6 +71,8 @@ public:
         // used in sorted file implementation.
         static void queryOrderMaker(const OrderMaker& sortOrder, const CNF& query,
                                     OrderMaker& queryorder, OrderMaker& cnforder);
+
+        void growFromParseTree(NameList* gAtts, Schema* inputSchema); 
 
 	// print to the screen
 	void Print () const;
