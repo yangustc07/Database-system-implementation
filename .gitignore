@@ -19,4 +19,6 @@
 *.meta
 *.temp
 *.tmp
+*.tbl
+*.db
 data/
